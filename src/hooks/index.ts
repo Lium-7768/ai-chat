@@ -8,7 +8,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
 
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
       return initialValue;
@@ -40,7 +40,7 @@ export function useSessionStorage<T>(key: string, initialValue: T): [T, (value: 
 
     try {
       const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.error(`Error reading sessionStorage key "${key}":`, error);
       return initialValue;

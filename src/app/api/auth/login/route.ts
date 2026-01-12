@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = body;
 
     // 验证输入
-    if (!email || !password) {
+    if (email === '' || password === '') {
       return NextResponse.json({ error: '邮箱和密码不能为空' }, { status: 400 });
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: '登录失败，请稍后重试' }, { status: 500 });
   }
 }

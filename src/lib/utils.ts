@@ -95,12 +95,10 @@ export function camelCase(str: string): string {
 }
 
 export function kebabCase(str: string): string {
-  return (
-    str
-      .match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
-      ?.join('-')
-      .toLowerCase() || str
+  const match = str.match(
+    /[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g
   );
+  return match !== null && match !== undefined ? match.join('-').toLowerCase() : str;
 }
 
 export function slugify(str: string): string {
@@ -130,7 +128,7 @@ export function getBaseUrl(): string {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  if (process.env.NEXT_PUBLIC_APP_URL) {
+  if (process.env.NEXT_PUBLIC_APP_URL !== undefined) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
   return 'http://localhost:3000';
@@ -145,11 +143,14 @@ export function getInitials(name: string): string {
 }
 
 export function copyToClipboard(text: string): Promise<boolean> {
-  if (typeof window !== 'undefined' && navigator.clipboard) {
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => true)
-      .catch(() => false);
+  if (typeof window !== 'undefined') {
+    const clipboard = navigator.clipboard;
+    if (clipboard !== undefined) {
+      return clipboard
+        .writeText(text)
+        .then(() => true)
+        .catch(() => false);
+    }
   }
   return Promise.resolve(false);
 }

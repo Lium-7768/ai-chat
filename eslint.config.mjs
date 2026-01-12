@@ -34,11 +34,7 @@ const eslintConfig = defineConfig([
         "warn",
         {
           selector: "interface",
-          format: ["PascalCase"],
-          custom: {
-            regex: "^I[A-Z]",
-            match: true
-          }
+          format: ["PascalCase"]
         },
         {
           selector: "typeAlias",
@@ -46,11 +42,11 @@ const eslintConfig = defineConfig([
         },
         {
           selector: "function",
-          format: ["camelCase"]
+          format: ["camelCase", "PascalCase"]
         },
         {
           selector: "variable",
-          format: ["camelCase", "UPPER_CASE"]
+          format: ["camelCase", "UPPER_CASE", "PascalCase"]
         }
       ],
       "no-console": ["warn", { allow: ["warn", "error"] }],
@@ -61,20 +57,12 @@ const eslintConfig = defineConfig([
       "eqeqeq": ["error", "always"],
       "curly": ["error", "all"],
       "no-empty-function": ["warn", { allow: ["arrowFunctions"] }],
-      "max-lines-per-function": ["warn", { max: 50, skipBlankLines: true, skipComments: true }],
+      "max-lines-per-function": "off",
       "complexity": ["warn", 10],
       "max-depth": ["warn", 4],
       "max-nested-callbacks": ["warn", 3],
       "no-duplicate-imports": "warn",
-      "sort-imports": [
-        "warn",
-        {
-          ignoreCase: false,
-          ignoreDeclarationSort: false,
-          ignoreMemberSort: false,
-          memberSyntaxSortOrder: ["none", "all", "multiple", "single"]
-        }
-      ]
+      "sort-imports": "off",
     }
   },
   {

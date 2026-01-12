@@ -21,7 +21,7 @@ export default function LoginPage() {
   // 检查 URL 中的错误参数
   useEffect(() => {
     const errorParam = searchParams.get('error');
-    if (errorParam) {
+    if (errorParam !== null) {
       const errorMessages: Record<string, string> = {
         github_auth_cancelled: '您取消了 GitHub 授权',
         missing_code: '授权失败，缺少授权码',
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   // 如果已登录，重定向到dashboard
   useEffect(() => {
-    if (user) {
+    if (user !== null) {
       router.push('/dashboard');
     }
   }, [user, router]);
@@ -52,7 +52,7 @@ export default function LoginPage() {
     if (result.success) {
       router.push('/dashboard');
     } else {
-      setError(result.error || '登录失败');
+      setError(result.error ?? '登录失败');
     }
 
     setIsLoading(false);

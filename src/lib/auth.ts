@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
+const SECRET_KEY = process.env.JWT_SECRET ?? 'your-secret-key-change-this-in-production';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export interface UserPayload {
@@ -25,7 +25,7 @@ export async function signToken(payload: UserPayload & { name?: string }): Promi
 
 export async function verifyToken(
   token: string
-): Promise<(UserPayload & { name?: string }) | null> {
+): Promise<(UserPayload & { name?: string | undefined }) | null> {
   try {
     const { payload } = await jwtVerify(token, key);
     return {
@@ -48,13 +48,16 @@ export function getUserFromCookies(): UserPayload | null {
     .find((row) => row.startsWith('auth_token='))
     ?.split('=')[1];
 
-  if (!token) {
+  if (token === null || token === undefined) {
     return null;
   }
 
   // Parse JWT payload (without verification for client side)
   try {
     const base64Url = token.split('.')[1];
+    if (base64Url === undefined) {
+      return null;
+    }
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)

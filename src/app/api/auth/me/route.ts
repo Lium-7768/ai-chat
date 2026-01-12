@@ -21,23 +21,24 @@ export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth_token')?.value;
 
-    if (!token) {
+    if (token === undefined) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
 
     const payload = await verifyToken(token);
 
-    if (!payload) {
+    if (payload === null) {
       return NextResponse.json({ error: '无效的token' }, { status: 401 });
     }
 
     // GitHub 用户信息已在 token 中，直接返回
     if (payload.userId.startsWith('github_')) {
+      const userName = payload.name ?? payload.email.split('@')[0];
       return NextResponse.json({
         user: {
           id: payload.userId,
           email: payload.email,
-          name: payload.name || payload.email.split('@')[0],
+          name: userName,
         },
       });
     }
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     // 测试用户从内存中查找
     const user = testUsers.find((u) => u.id === payload.userId);
 
-    if (!user) {
+    if (user === undefined) {
       return NextResponse.json({ error: '用户不存在' }, { status: 404 });
     }
 

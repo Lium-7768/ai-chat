@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
 
-      return { success: false, error: data.error || '登录失败' };
+      return { success: false, error: data.error ?? '登录失败' };
     } catch {
       return { success: false, error: '网络错误，请稍后重试' };
     }

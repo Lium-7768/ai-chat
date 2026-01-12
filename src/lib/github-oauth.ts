@@ -1,7 +1,7 @@
 export const githubConfig = {
-  clientId: process.env.GITHUB_CLIENT_ID || '',
-  clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-  redirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/api/auth/github/callback',
+  clientId: process.env.GITHUB_CLIENT_ID ?? '',
+  clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+  redirectUri: process.env.GITHUB_REDIRECT_URI ?? 'http://localhost:3000/api/auth/github/callback',
 };
 
 export function getGitHubAuthUrl() {
@@ -39,7 +39,7 @@ export async function getGitHubUser(code: string): Promise<GitHubUser | null> {
 
     const tokenData = await tokenResponse.json();
 
-    if (!tokenData.access_token) {
+    if (tokenData.access_token === undefined) {
       return null;
     }
 
@@ -54,7 +54,7 @@ export async function getGitHubUser(code: string): Promise<GitHubUser | null> {
     const userData = await userResponse.json();
 
     // 获取用户邮箱（如果公开邮箱为空）
-    if (!userData.email) {
+    if (userData.email === null || userData.email === undefined || userData.email === '') {
       const emailsResponse = await fetch('https://api.github.com/user/emails', {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,

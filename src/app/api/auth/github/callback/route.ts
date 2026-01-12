@@ -8,39 +8,39 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error');
 
   // 如果用户拒绝授权
-  if (error) {
+  if (error !== null) {
     console.error('GitHub OAuth error:', error);
     const url = new URL('/', request.url);
     url.searchParams.set('error', 'github_auth_cancelled');
     return NextResponse.redirect(url);
   }
 
-  if (!code) {
+  if (code === null) {
     console.error('Missing code parameter');
     const url = new URL('/', request.url);
     url.searchParams.set('error', 'missing_code');
     return NextResponse.redirect(url);
   }
 
-  console.log('Received GitHub code, exchanging for user info...');
+  console.warn('Received GitHub code, exchanging for user info...');
 
   // 获取 GitHub 用户信息
   const githubUser = await getGitHubUser(code);
 
-  if (!githubUser) {
+  if (githubUser === null) {
     console.error('Failed to get GitHub user');
     const url = new URL('/', request.url);
     url.searchParams.set('error', 'failed_to_get_user');
     return NextResponse.redirect(url);
   }
 
-  console.log('GitHub user:', githubUser.login, githubUser.email);
+  console.warn('GitHub user:', githubUser.login, githubUser.email);
 
   // 创建或更新用户（这里简化处理，实际应该存储到数据库）
   const user = {
     id: `github_${githubUser.id}`,
-    email: githubUser.email || `${githubUser.login}@github.local`,
-    name: githubUser.name || githubUser.login,
+    email: githubUser.email ?? `${githubUser.login}@github.local`,
+    name: githubUser.name ?? githubUser.login,
   };
 
   // 生成 JWT token
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     name: user.name,
   });
 
-  console.log('Generated token, redirecting to dashboard...');
+  console.warn('Generated token, redirecting to dashboard...');
 
   // 重定向到 dashboard 并设置 cookie
   const url = new URL('/dashboard', request.url);
