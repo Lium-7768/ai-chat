@@ -15,13 +15,13 @@ module.exports = {
         'chore',
         'revert',
         'build',
-        'ci'
-      ]
+        'ci',
+      ],
     ],
     'scope-enum': [2, 'always', ['*', 'auth', 'ui', 'api', 'db', 'config', 'deps']],
     'subject-case': [0],
     'subject-empty': [2, 'never'],
     'subject-full-stop': [2, 'never', '.'],
-    'header-max-length': [2, 'always', 100]
-  }
+    'header-max-length': [2, 'always', 100],
+  },
 };

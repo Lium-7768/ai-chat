@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { signToken } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { signToken } from '@/lib/auth';
 
 // 模拟用户数据库
 const users = [
@@ -15,43 +15,34 @@ const users = [
     password: 'user123',
     name: 'Test User',
   },
-]
+];
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = body
+    const body = await request.json();
+    const { email, password } = body;
 
     // 验证输入
     if (!email || !password) {
-      return NextResponse.json(
-        { error: '邮箱和密码不能为空' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '邮箱和密码不能为空' }, { status: 400 });
     }
 
     // 查找用户
-    const user = users.find((u) => u.email === email)
+    const user = users.find((u) => u.email === email);
     if (!user) {
-      return NextResponse.json(
-        { error: '邮箱或密码错误' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 });
     }
 
     // 验证密码
     if (user.password !== password) {
-      return NextResponse.json(
-        { error: '邮箱或密码错误' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 });
     }
 
     // 生成JWT token
     const token = await signToken({
       userId: user.id,
       email: user.email,
-    })
+    });
 
     // 设置cookie
     const response = NextResponse.json({
@@ -61,7 +52,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
       },
-    })
+    });
 
     response.cookies.set('auth_token', token, {
       httpOnly: true,
@@ -69,13 +60,10 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/',
-    })
+    });
 
-    return response
+    return response;
   } catch (error) {
-    return NextResponse.json(
-      { error: '登录失败，请稍后重试' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '登录失败，请稍后重试' }, { status: 500 });
   }
 }

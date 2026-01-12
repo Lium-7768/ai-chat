@@ -14,16 +14,19 @@ if (!fs.existsSync(componentsDir)) {
   process.exit(1);
 }
 
-const componentFiles = fs.readdirSync(componentsDir)
-  .filter(file => file.endsWith('.tsx') || file.endsWith('.ts'))
-  .filter(file => !file.startsWith('index'))
-  .filter(file => !file.startsWith('_'));
+const componentFiles = fs
+  .readdirSync(componentsDir)
+  .filter((file) => file.endsWith('.tsx') || file.endsWith('.ts'))
+  .filter((file) => !file.startsWith('index'))
+  .filter((file) => !file.startsWith('_'));
 
-const exports = componentFiles.map(file => {
-  const componentName = path.parse(file).name;
-  const exportName = componentName.charAt(0).toUpperCase() + componentName.slice(1);
-  return `export { default as ${exportName} } from './${componentName}';`;
-}).join('\n');
+const exports = componentFiles
+  .map((file) => {
+    const componentName = path.parse(file).name;
+    const exportName = componentName.charAt(0).toUpperCase() + componentName.slice(1);
+    return `export { default as ${exportName} } from './${componentName}';`;
+  })
+  .join('\n');
 
 fs.writeFileSync(componentsIndexPath, exports);
 

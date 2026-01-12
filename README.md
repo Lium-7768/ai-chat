@@ -23,12 +23,14 @@
 ### 安装
 
 1. 克隆仓库
+
 ```bash
 git clone https://github.com/your-username/ai-chat.git
 cd ai-chat
 ```
 
 2. 安装依赖
+
 ```bash
 bun install
 # 或
@@ -36,12 +38,14 @@ npm install
 ```
 
 3. 配置环境变量
+
 ```bash
 cp .env.example .env
 # 编辑 .env 文件，填入你的配置
 ```
 
 4. 运行开发服务器
+
 ```bash
 bun run dev
 # 或
@@ -116,6 +120,7 @@ bun run clean
 ### Git 提交前
 
 项目配置了 pre-commit hooks，会自动运行：
+
 ```bash
 npm run precommit
 ```
@@ -134,6 +139,7 @@ npm run precommit
 ### 使用方式
 
 **手动审查**
+
 ```bash
 # 审查单个文件
 node .claude/skills/code-review/scripts/index.js src/app/page.tsx
@@ -146,11 +152,13 @@ node .claude/skills/code-review/scripts/index.js src/app/page.tsx --only-securit
 ```
 
 **自动触发**
+
 - 文件写入前：自动进行代码质量检查
 - 文件写入后：对 >1KB 文件进行完整审查
 - Pull Request：自动运行并添加评论
 
-详细信息请查看 [`.claude/skills/code-review/README.md`](.claude/skills/code-review/README.md)。
+详细信息请查看
+[`.claude/skills/code-review/README.md`](.claude/skills/code-review/README.md)。
 
 ## 🧪 测试
 
@@ -176,16 +184,19 @@ bun run build
 ### 部署
 
 **Vercel**
+
 ```bash
 vercel
 ```
 
 **Netlify**
+
 ```bash
 netlify deploy --prod
 ```
 
 **Docker**
+
 ```bash
 docker build -t ai-chat .
 docker run -p 3000:3000 ai-chat
@@ -235,7 +246,8 @@ docker run -p 3000:3000 ai-chat
 
 ## 📞 联系方式
 
-- 项目链接: [https://github.com/your-username/ai-chat](https://github.com/your-username/ai-chat)
+- 项目链接:
+  [https://github.com/your-username/ai-chat](https://github.com/your-username/ai-chat)
 - 问题反馈: [GitHub Issues](https://github.com/your-username/ai-chat/issues)
 
 ## 📝 更新日志

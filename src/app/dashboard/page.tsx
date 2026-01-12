@@ -1,33 +1,33 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/components/providers/auth-provider'
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/components/providers/auth-provider';
 
 export default function DashboardPage() {
-  const { user, isLoading, logout } = useAuth()
-  const router = useRouter()
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
 
   // 如果未登录，重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/')
+      router.push('/');
     }
-  }, [user, isLoading, router])
+  }, [user, isLoading, router]);
 
   if (isLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>加载中...</p>
       </div>
-    )
+    );
   }
 
   const handleLogout = async () => {
-    await logout()
-  }
+    await logout();
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -69,5 +69,5 @@ export default function DashboardPage() {
         </Card>
       </main>
     </div>
-  )
+  );
 }

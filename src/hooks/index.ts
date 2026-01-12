@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export function useLocalStorage<T>(
-  key: string,
-  initialValue: T
-): [T, (value: T) => void] {
+export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
       return initialValue;
@@ -35,10 +32,7 @@ export function useLocalStorage<T>(
   return [storedValue, setValue];
 }
 
-export function useSessionStorage<T>(
-  key: string,
-  initialValue: T
-): [T, (value: T) => void] {
+export function useSessionStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
       return initialValue;
@@ -76,7 +70,7 @@ export function useMediaQuery(query: string): boolean {
   useEffect(() => {
     const media = window.matchMedia(query);
     if (media.matches !== matches) {
-      setMatches(media.matches);
+      setTimeout(() => setMatches(media.matches), 0);
     }
 
     const listener = (event: MediaQueryListEvent) => {
@@ -100,17 +94,17 @@ export function useDarkMode(): [boolean, (value: boolean) => void] {
     setIsSystemDark(prefersDark);
   }, [prefersDark]);
 
-  const toggleDarkMode = useCallback((value: boolean) => {
-    setIsDark(value);
-  }, [setIsDark]);
+  const toggleDarkMode = useCallback(
+    (value: boolean) => {
+      setIsDark(value);
+    },
+    [setIsDark]
+  );
 
   return [isSystemDark ? isDark : isDark, toggleDarkMode];
 }
 
-export function useDebounce<T extends (...args: any[]) => any>(
-  value: T,
-  delay: number
-): T {
+export function useDebounce<T extends (...args: unknown[]) => unknown>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -130,7 +124,8 @@ export function useMounted(): boolean {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // 使用 setTimeout 避免在 effect 中直接调用 setState
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   return mounted;
@@ -142,7 +137,7 @@ export function useOnClickOutside<T extends HTMLElement>(
 ): void {
   useEffect(() => {
     const listener = (event: Event) => {
-      if (!ref.current || ref.current.contains(event.target as Node)) {
+      if (ref.current === null || ref.current.contains(event.target as Node)) {
         return;
       }
       handler(event);
