@@ -95,9 +95,7 @@ export function camelCase(str: string): string {
 }
 
 export function kebabCase(str: string): string {
-  const match = str.match(
-    /[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g
-  );
+  const match = str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g);
   return match !== null && match !== undefined ? match.join('-').toLowerCase() : str;
 }
 
