@@ -1,0 +1,22 @@
+# Bun
+bun.lockb
+bun.lock
+
+# Testing
+coverage
+.nyc_output
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Misc
+.DS_Store
+*.pem
+.env
+.env.local
+.env.development
+.env.test
+.env.production

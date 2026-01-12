@@ -1,0 +1,164 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  code-review:
+    name: Code Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.{ts,tsx,js,jsx}
+          files_ignore: |
+            node_modules/**
+            .next/**
+            .git/**
+            .claude/**
+
+      - name: Run code review
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "Changed files:"
+          echo "${{ steps.changed-files.outputs.all_changed_files }}"
+
+          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+
+          for file in $changed_files; do
+            if [ -f "$file" ]; then
+              echo "Reviewing: $file"
+              node .claude/skills/code-review/scripts/index.js "$file" --output "review-$(basename $file .json).json" || true
+            fi
+          done
+
+          echo "Creating combined review report..."
+          node .claude/skills/code-review/scripts/index.js "src/" --directory --output "combined-review.json" || true
+
+      - name: Post review comment
+        if: github.event_name == 'pull_request' && steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let report = '';
+            let overallScore = 0;
+            let fileCount = 0;
+            let totalIssues = 0;
+            let totalCritical = 0;
+            let totalWarnings = 0;
+
+            try {
+              if (fs.existsSync('combined-review.json')) {
+                const combinedReport = JSON.parse(fs.readFileSync('combined-review.json', 'utf8'));
+                overallScore = combinedReport.summary.overallScore || 0;
+                fileCount = combinedReport.summary.totalFiles || 0;
+                totalIssues = combinedReport.summary.totalIssues || 0;
+                totalCritical = combinedReport.summary.critical || 0;
+                totalWarnings = combinedReport.summary.warnings || 0;
+
+                report += `# 🔬 代码审查报告\n\n`;
+                report += `## 总体评分\n`;
+                report += `- **得分**: ${overallScore}/100\n`;
+                report += `- **等级**: ${combinedReport.summary.grade}\n`;
+                report += `- **审查文件数**: ${fileCount}\n`;
+                report += `- **总问题数**: ${totalIssues}\n`;
+                report += `- **严重问题**: ${totalCritical}\n`;
+                report += `- **警告**: ${totalWarnings}\n\n`;
+
+                if (totalCritical > 0) {
+                  report += `## 🚨 严重问题\n`;
+                  report += `检测到 ${totalCritical} 个严重问题，必须修复。\n\n`;
+                }
+
+                if (totalWarnings > 0) {
+                  report += `## ⚠️ 警告\n`;
+                  report += `检测到 ${totalWarnings} 个警告，建议修复。\n\n`;
+                }
+
+                if (overallScore >= 80) {
+                  report += `## ✅ 审查通过\n`;
+                  report += `代码质量良好，可以合并。\n`;
+                } else if (overallScore >= 60) {
+                  report += `## 🟡 需要改进\n`;
+                  report += `代码质量可以接受，但建议修复主要问题。\n`;
+                } else {
+                  report += `## 🔴 需要改进\n`;
+                  report += `代码质量需要改进，请修复严重问题后再合并。\n`;
+                }
+
+                report += `---\n`;
+                report += `## 详细审查结果\n\n`;
+
+                combinedReport.files.forEach(fileReport => {
+                  if (fileReport.file && !fileReport.file.error) {
+                    report += `### ${fileReport.file.name}\n`;
+                    report += `- **得分**: ${fileReport.summary.overallScore}/100 (${fileReport.summary.grade})\n`;
+
+                    if (fileReport.details) {
+                      Object.keys(fileReport.details).forEach(category => {
+                        const detail = fileReport.details[category];
+                        if (detail.issues && detail.issues.length > 0) {
+                          report += `\n**${category}**: ${detail.score}/100, ${detail.totalIssues} 个问题\n`;
+
+                          detail.issues.slice(0, 3).forEach(issue => {
+                            const icon = issue.severity === 'error' || issue.severity === 'critical' ? '🔴' :
+                                        issue.severity === 'warn' ? '🟡' : '🔵';
+                            report += `- ${icon} ${issue.message} (Line ${issue.line})\n`;
+                            if (issue.suggestion) {
+                              report += `  💡 建议: ${issue.suggestion}\n`;
+                            }
+                          });
+
+                          if (detail.issues.length > 3) {
+                            report += `  ... 还有 ${detail.issues.length - 3} 个问题\n`;
+                          }
+                        }
+                      });
+                    }
+                    report += `\n`;
+                  }
+                });
+              } else {
+                report += `# 🔬 代码审查报告\n\n`;
+                report += `无法读取审查报告。请查看 Actions 日志获取详细信息。\n`;
+              }
+            } catch (error) {
+              report = `# 🔬 代码审查报告\n\n`;
+              report += `生成报告时出错: ${error.message}\n`;
+            }
+
+            const { owner, repo, number } = context.issue;
+            const comment = { owner, repo, issue_number: number, body: report };
+
+            try {
+              await github.rest.issues.createComment(comment);
+            } catch (error) {
+              console.error('Failed to create comment:', error);
+            }
