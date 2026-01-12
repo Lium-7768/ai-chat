@@ -13,7 +13,8 @@ const eslintConfig = defineConfig([
         sourceType: "module",
         ecmaFeatures: {
           jsx: true
-        }
+        },
+        project: "./tsconfig.json"
       }
     },
     rules: {

@@ -37,14 +37,14 @@ export async function verifyToken(token: string): Promise<(UserPayload & { name?
 }
 
 export function getUserFromCookies(): UserPayload | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') {return null}
 
   const token = document.cookie
     .split('; ')
     .find((row) => row.startsWith('auth_token='))
     ?.split('=')[1]
 
-  if (!token) return null
+  if (!token) {return null}
 
   // Parse JWT payload (without verification for client side)
   try {
@@ -63,13 +63,13 @@ export function getUserFromCookies(): UserPayload | null {
 }
 
 export function setAuthCookie(token: string): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined') {return}
 
   document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; same-site=lax`
 }
 
 export function clearAuthCookie(): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined') {return}
 
   document.cookie = 'auth_token=; path=/; max-age=0'
 }

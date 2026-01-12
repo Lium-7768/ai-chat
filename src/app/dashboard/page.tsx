@@ -1,10 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { useAuth } from '@/components/providers/auth-provider'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export default function DashboardPage() {
   const { user, isLoading, logout } = useAuth()

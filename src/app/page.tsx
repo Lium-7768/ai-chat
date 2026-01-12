@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Github } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/components/providers/auth-provider'
 
 export default function LoginPage() {
@@ -27,7 +27,8 @@ export default function LoginPage() {
         missing_code: '授权失败，缺少授权码',
         failed_to_get_user: '获取用户信息失败，请重试',
       }
-      setError(errorMessages[errorParam] || '登录失败，请重试')
+      const message = errorMessages[errorParam] ?? '登录失败，请重试'
+      setError(message)
       // 清除 URL 中的错误参数
       router.replace('/')
     }
