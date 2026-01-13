@@ -35,8 +35,7 @@ export function RepositoriesTable({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const selectedCount = selectedIds.size;
-  const allSelected =
-    repositories.length > 0 && selectedCount === repositories.length;
+  const allSelected = repositories.length > 0 && selectedCount === repositories.length;
   const someSelected = selectedCount > 0 && !allSelected;
 
   const handleToggleSelect = (repoId: number) => {
@@ -100,7 +99,8 @@ export function RepositoriesTable({
           <CardContent className="py-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">
-                已选择 <span className="text-blue-600 dark:text-blue-400">{selectedCount}</span> 个仓库
+                已选择 <span className="text-blue-600 dark:text-blue-400">{selectedCount}</span>{' '}
+                个仓库
               </span>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
@@ -148,7 +148,10 @@ export function RepositoriesTable({
             </TableHeader>
             <TableBody>
               {repositories.map((repo) => (
-                <TableRow key={repo.id} className={selectedIds.has(repo.id) ? 'bg-blue-50 dark:bg-blue-950/20' : ''}>
+                <TableRow
+                  key={repo.id}
+                  className={selectedIds.has(repo.id) ? 'bg-blue-50 dark:bg-blue-950/20' : ''}
+                >
                   <TableCell>
                     <input
                       type="checkbox"

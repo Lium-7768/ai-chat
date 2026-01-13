@@ -35,6 +35,14 @@
         "tabWidth": 2,
         "singleQuote": false
       }
+    },
+    {
+      "files": [".github/workflows/*.yml", ".github/workflows/*.yaml"],
+      "options": {
+        "tabWidth": 2,
+        "singleQuote": false,
+        "proseWrap": "preserve"
+      }
     }
   ]
 }

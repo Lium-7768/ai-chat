@@ -25,3 +25,4 @@ coverage
 firebase-debug.log
 firebase-debug.log.*
 firebase-debug.*.log
+.github/workflows/*.yml
