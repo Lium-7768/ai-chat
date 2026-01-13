@@ -43,8 +43,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v44
         with:
-          files: |
-            **/*.{ts,tsx,js,jsx}
+          files: "**/*.{ts,tsx,js,jsx}"
           files_ignore: |
             node_modules/**
             .next/**
@@ -84,7 +83,7 @@ jobs:
             warning_count=$(jq '[.[].warningCount] | add' eslint-report.json 2>/dev/null || echo "0")
             file_count=$(jq 'length' eslint-report.json 2>/dev/null || echo "0")
 
-            # Calculate score (simple formula)
+            # Calculate score
             if [ "$error_count" -eq 0 ] && [ "$warning_count" -eq 0 ]; then
               score=100
               grade="A+"
@@ -100,34 +99,12 @@ jobs:
               score=0
             fi
 
-            # Create report JSON
-            cat > review-report.json <<EOF
-            {
-              "summary": {
-                "overallScore": $score,
-                "grade": "$grade",
-                "totalFiles": $file_count,
-                "totalIssues": $((error_count + warning_count)),
-                "critical": $error_count,
-                "warnings": $warning_count
-              },
-              "eslintReport": "eslint-report.json"
-            }
-EOF
+            # Create report JSON using printf
+            printf '{"summary":{"overallScore":%s,"grade":"%s","totalFiles":%s,"totalIssues":%s,"critical":%s,"warnings":%s},"eslintReport":"eslint-report.json"}' \
+              "$score" "$grade" "$file_count" "$((error_count + warning_count))" "$error_count" "$warning_count" > review-report.json
           else
             # No issues or ESLint failed
-            cat > review-report.json <<EOF
-            {
-              "summary": {
-                "overallScore": 100,
-                "grade": "A+",
-                "totalFiles": 0,
-                "totalIssues": 0,
-                "critical": 0,
-                "warnings": 0
-              }
-            }
-EOF
+            printf '{"summary":{"overallScore":100,"grade":"A+","totalFiles":0,"totalIssues":0,"critical":0,"warnings":0}}' > review-report.json
           fi
 
       - name: Upload review reports
@@ -205,7 +182,8 @@ EOF
                 const eslintOutput = fs.readFileSync('eslint-output.txt', 'utf8');
                 if (eslintOutput.trim()) {
                   report += `\n---\n## ESLint 检查结果\n\n`;
-                  report += `\`\`\`\n${eslintOutput.split('\n').slice(0, 50).join('\n')}\n\`\`\`\n`;
+                  const lines = eslintOutput.split('\n').slice(0, 50);
+                  report += `\`\`\`\n${lines.join('\n')}\n\`\`\`\n`;
                 }
               }
 
