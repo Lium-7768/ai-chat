@@ -1,0 +1,31 @@
+name: Cleanup Merged Branches
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Delete merged branches
+    runs-on: ubuntu-latest
+    if: github.repository == 'Lium-7768/ai-chat'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete merged branches
+        run: |
+          # 获取所有已合并到 main 的分支（排除 main 和 protected branches）
+          git branch -r --merged origin/main \
+            | grep -v 'origin/main' \
+            | grep -v 'origin/develop' \
+            | sed 's/origin\///' \
+            | xargs -I {} git push origin --delete {} 2>&1 || true
+
+          echo "Cleaned up merged branches"
