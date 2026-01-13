@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +11,14 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useI18n } from '@/components/providers/i18n-provider';
-import { getUserRepositories, createRepository, deleteRepository } from '@/lib/github';
 import { GitHubRepository } from '@/types';
 import { RepositoriesTable } from '@/components/github/repositories-table';
+import {
+  useRepositories,
+  useCreateRepository,
+  useDeleteRepository,
+  useBatchDeleteRepositories,
+} from '@/hooks';
 
 type Tab = 'overview' | 'github' | 'settings';
 
@@ -22,103 +27,19 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
-  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  // React Query hooks
+  const { data: repositories = [], isLoading: isLoadingRepos } = useRepositories(
+    user?.githubAccessToken
+  );
+  const createRepoMutation = useCreateRepository();
+  const deleteRepoMutation = useDeleteRepository();
+  const batchDeleteMutation = useBatchDeleteRepositories();
+
+  // Form state
   const [newRepoName, setNewRepoName] = useState('');
   const [newRepoDescription, setNewRepoDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
-  const [isCreatingRepo, setIsCreatingRepo] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/');
-    }
-  }, [user, isLoading, router]);
-
-  const loadRepositories = useCallback(async () => {
-    setIsLoadingRepos(true);
-    setError(null);
-    try {
-      const repos = await getUserRepositories(
-        { type: 'owner', sort: 'updated', per_page: 100 },
-        user?.githubAccessToken
-      );
-      setRepositories(repos);
-    } catch {
-      setError(t('github.loadFailed'));
-    } finally {
-      setIsLoadingRepos(false);
-    }
-  }, [user?.githubAccessToken, t]);
-
-  useEffect(() => {
-    if (
-      user?.githubAccessToken !== null &&
-      user?.githubAccessToken !== undefined &&
-      user?.githubAccessToken !== ''
-    ) {
-      void loadRepositories();
-    }
-  }, [user?.githubAccessToken, loadRepositories]);
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleCreateRepository = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCreatingRepo(true);
-    setError(null);
-    try {
-      await createRepository(
-        {
-          name: newRepoName,
-          description: newRepoDescription,
-          private: isPrivate,
-          auto_init: true,
-        },
-        user?.githubAccessToken
-      );
-      setNewRepoName('');
-      setNewRepoDescription('');
-      setIsPrivate(false);
-      await loadRepositories();
-    } catch (error) {
-      console.error('Create repository error:', error);
-      setError(error instanceof Error ? error.message : t('github.createFailed'));
-    } finally {
-      setIsCreatingRepo(false);
-    }
-  };
-
-  const handleEditRepository = (repo: GitHubRepository) => {
-    router.push(`/dashboard/github/${repo.owner.login}/${repo.name}/edit`);
-  };
-
-  const handleDeleteRepository = async (repo: GitHubRepository) => {
-    try {
-      await deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken);
-      await loadRepositories();
-    } catch (error) {
-      console.error('Delete repository error:', error);
-      setError(error instanceof Error ? error.message : t('github.deleteFailed'));
-    }
-  };
-
-  const handleBatchDeleteRepositories = async (repos: GitHubRepository[]) => {
-    try {
-      // 并发删除所有选中的仓库
-      await Promise.all(
-        repos.map((repo) => deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken))
-      );
-      await loadRepositories();
-    } catch (error) {
-      console.error('Batch delete error:', error);
-      setError(error instanceof Error ? error.message : `批量删除失败：已删除 ${repos.length} 个仓库中的部分仓库`);
-    }
-  };
 
   if (isLoading || !user) {
     return (
@@ -127,6 +48,51 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleCreateRepository = async (e: React.FormEvent) => {
+    e.preventDefault();
+    createRepoMutation.mutate(
+      {
+        params: {
+          name: newRepoName,
+          description: newRepoDescription,
+          private: isPrivate,
+          auto_init: true,
+        },
+        token: user?.githubAccessToken ?? null,
+      },
+      {
+        onSuccess: () => {
+          setNewRepoName('');
+          setNewRepoDescription('');
+          setIsPrivate(false);
+        },
+      }
+    );
+  };
+
+  const handleEditRepository = (repo: GitHubRepository) => {
+    router.push(`/dashboard/github/${repo.owner.login}/${repo.name}/edit`);
+  };
+
+  const handleDeleteRepository = (repo: GitHubRepository) => {
+    deleteRepoMutation.mutate({
+      owner: repo.owner.login,
+      repo: repo.name,
+      token: user?.githubAccessToken ?? null,
+    });
+  };
+
+  const handleBatchDeleteRepositories = (repos: GitHubRepository[]) => {
+    batchDeleteMutation.mutate({
+      repos,
+      token: user?.githubAccessToken ?? null,
+    });
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
@@ -190,21 +156,15 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-3">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('dashboard.userId')}
-                      </p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.userId')}</p>
                       <p className="text-lg">{user.id}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('dashboard.email')}
-                      </p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.email')}</p>
                       <p className="text-lg">{user.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('dashboard.username')}
-                      </p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.username')}</p>
                       <p className="text-lg">{user.name}</p>
                     </div>
                   </div>
@@ -243,9 +203,7 @@ export default function DashboardPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('dashboard.loginMethod')}</span>
-                        <span>
-                          {user.provider === 'github' ? 'GitHub OAuth' : t('common.email')}
-                        </span>
+                        <span>{user.provider === 'github' ? 'GitHub OAuth' : t('common.email')}</span>
                       </div>
                       {user.provider === 'github' && (
                         <div className="flex justify-between">
@@ -308,19 +266,14 @@ export default function DashboardPage() {
                           设为私有仓库
                         </Label>
                       </div>
-                      <Button type="submit" disabled={isCreatingRepo || !newRepoName.trim()}>
-                        {isCreatingRepo ? '创建中...' : '创建仓库'}
+                      <Button type="submit" disabled={createRepoMutation.isPending || !newRepoName.trim()}>
+                        {createRepoMutation.isPending ? '创建中...' : '创建仓库'}
                       </Button>
                     </form>
                   </div>
 
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold mb-4">我的仓库 ({repositories.length})</h3>
-                    {error !== null && (
-                      <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md">
-                        {error}
-                      </div>
-                    )}
                     <RepositoriesTable
                       repositories={repositories}
                       isLoading={isLoadingRepos}
