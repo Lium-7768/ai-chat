@@ -42,7 +42,7 @@ export function SidebarItem({ active, children, onClick }: SidebarItemProps) {
         'hover:bg-zinc-100 dark:hover:bg-zinc-800',
         active === true
           ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
-          : 'text-zinc-700 dark:text-zinc-300',
+          : 'text-zinc-700 dark:text-zinc-300'
       )}
     >
       {children}
@@ -51,5 +51,9 @@ export function SidebarItem({ active, children, onClick }: SidebarItemProps) {
 }
 
 export function SidebarLabel({ className, children }: SidebarProps) {
-  return <span className={cn('px-3 text-xs font-semibold text-muted-foreground uppercase', className)}>{children}</span>;
+  return (
+    <span className={cn('px-3 text-xs font-semibold text-muted-foreground uppercase', className)}>
+      {children}
+    </span>
+  );
 }

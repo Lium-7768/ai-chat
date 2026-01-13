@@ -87,9 +87,9 @@ export async function GET(request: NextRequest) {
       githubAccessToken: user.githubAccessToken,
     });
 
-    console.warn('Generated token, redirecting to dashboard...');
+    console.warn('Generated token with access token, redirecting to dashboard...');
 
-    const url = new URL('/dashboard', request.url);
+    const url = new URL('/dashboard?refresh=1', request.url);
     const response = NextResponse.redirect(url);
 
     response.cookies.set('auth_token', token, {
