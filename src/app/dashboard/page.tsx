@@ -85,8 +85,9 @@ export default function DashboardPage() {
       setNewRepoDescription('');
       setIsPrivate(false);
       await loadRepositories();
-    } catch {
-      setError(t('github.createFailed'));
+    } catch (error) {
+      console.error('Create repository error:', error);
+      setError(error instanceof Error ? error.message : t('github.createFailed'));
     } finally {
       setIsCreatingRepo(false);
     }
@@ -100,8 +101,9 @@ export default function DashboardPage() {
     try {
       await deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken);
       await loadRepositories();
-    } catch {
-      setError(t('github.deleteFailed'));
+    } catch (error) {
+      console.error('Delete repository error:', error);
+      setError(error instanceof Error ? error.message : t('github.deleteFailed'));
     }
   };
 
@@ -112,8 +114,9 @@ export default function DashboardPage() {
         repos.map((repo) => deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken))
       );
       await loadRepositories();
-    } catch {
-      setError(`批量删除失败：已删除 ${repos.length} 个仓库中的部分仓库`);
+    } catch (error) {
+      console.error('Batch delete error:', error);
+      setError(error instanceof Error ? error.message : `批量删除失败：已删除 ${repos.length} 个仓库中的部分仓库`);
     }
   };
 
