@@ -127,8 +127,15 @@ export function useDeleteRepository() {
       void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
     },
     onError: (error: Error) => {
+      // If error is 404, the repository is already deleted - treat as success
+      if (error.message.includes('404') || error.message.includes('Not Found')) {
+        void toast.success('仓库删除成功');
+        void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+        return;
+      }
       void toast.error(`删除失败: ${error.message}`);
     },
+    retry: false,
   });
 }
 
@@ -147,7 +154,14 @@ export function useBatchDeleteRepositories() {
       void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
     },
     onError: (error: Error) => {
+      // If error is 404, the repository is already deleted - treat as success
+      if (error.message.includes('404') || error.message.includes('Not Found')) {
+        void toast.success('仓库删除成功');
+        void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+        return;
+      }
       void toast.error(`批量删除失败: ${error.message}`);
     },
+    retry: false,
   });
 }
