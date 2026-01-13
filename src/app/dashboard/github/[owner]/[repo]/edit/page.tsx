@@ -36,7 +36,9 @@ export default function EditRepositoryPage() {
         const repo = await getRepository(owner, repoName, user?.githubAccessToken);
         setRepository(repo);
         setName(repo.name);
-        setDescription(repo.description !== null && repo.description !== undefined ? repo.description : '');
+        setDescription(
+          repo.description !== null && repo.description !== undefined ? repo.description : ''
+        );
         setIsPrivate(repo.private);
       } catch {
         setError('加载仓库信息失败');
@@ -239,7 +241,11 @@ export default function EditRepositoryPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">语言</span>
-                <span className="font-medium">{repository.language !== null && repository.language !== undefined ? repository.language : '-'}</span>
+                <span className="font-medium">
+                  {repository.language !== null && repository.language !== undefined
+                    ? repository.language
+                    : '-'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Stars</span>
