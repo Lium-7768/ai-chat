@@ -530,81 +530,6 @@ export function ExpensiveComponent({ items }: Props) {
 }
 ```
 
-## Code Review System
-
-### Automated Code Review
-
-The project includes a custom code review system that automatically checks:
-
-**Code Quality:**
-
-- TypeScript type safety and strict mode
-- React Hooks best practices
-- Code style and formatting
-- Naming conventions
-- Error handling
-
-**Security:**
-
-- Sensitive data detection (API keys, tokens)
-- XSS/CSRF prevention
-- Input validation
-- Dependency vulnerabilities
-- Unsafe function usage (eval, innerHTML)
-
-**Performance:**
-
-- Next.js optimizations (Image component, dynamic imports, ISR)
-- React performance (useMemo, useCallback, React.memo)
-- Bundle size optimization
-- Memory leak detection
-- File size and complexity analysis
-
-**UI/UX:**
-
-- shadcn/ui component usage
-- Accessibility (ARIA, keyboard navigation)
-- Responsive design
-- Theme consistency
-- User experience patterns
-
-### Running Code Review
-
-```bash
-# Review a single file
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx
-
-# Review entire directory
-node .claude/skills/code-review/scripts/index.js src --directory
-
-# Review specific dimension
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx --only-security
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx --only-performance
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx --only-uiux
-
-# Review with output to file
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx --output review.json
-```
-
-### Understanding Review Results
-
-Review scores:
-
-- **A+ (90-100)**: Excellent, meets all best practices
-- **A (85-89)**: Very good quality
-- **B+ (80-84)**: Good, minor improvements needed
-- **B (75-79)**: Needs improvement
-- **C+ (70-74)**: Needs significant improvement
-- **C (65-69)**: Poor quality
-- **D (60-64)**: Needs major improvement
-- **F (<60)**: Must fix all issues
-
-Issue severity:
-
-- **Critical**: Must fix before merging
-- **Warning**: Should fix before merging
-- **Info**: Suggested improvements
-
 ## File Organization
 
 **Components:**
@@ -852,15 +777,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 1. **Always run type checking:** `bun run typecheck`
 2. **Always run linting before committing:** `bun run lint:fix`
-3. **Always run code review:**
-   `node .claude/skills/code-review/scripts/index.js <file>`
-4. **Write tests for new features:** Maintain code quality
-5. **Use TypeScript strict mode:** Catch errors early
-6. **Follow shadcn/ui patterns:** Use provided components
-7. **Optimize for performance:** Use memo, useMemo, dynamic imports
-8. **Ensure accessibility:** Test keyboard navigation and screen readers
-9. **Handle errors gracefully:** Use try-catch and error boundaries
-10. **Keep components small and focused:** Easier to test and maintain
+3. **Write tests for new features:** Maintain code quality
+4. **Use TypeScript strict mode:** Catch errors early
+5. **Follow shadcn/ui patterns:** Use provided components
+6. **Optimize for performance:** Use memo, useMemo, dynamic imports
+7. **Ensure accessibility:** Test keyboard navigation and screen readers
+8. **Handle errors gracefully:** Use try-catch and error boundaries
+9. **Keep components small and focused:** Easier to test and maintain
 
 ## Getting Help
 
