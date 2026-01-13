@@ -6,18 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarItem,
-  SidebarLabel,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarItem, SidebarLabel } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { getUserRepositories, createRepository, deleteRepository } from '@/lib/github';
 import { GitHubRepository } from '@/types';
+import { RepositoriesTable } from '@/components/github/repositories-table';
 
 type Tab = 'overview' | 'github' | 'settings';
 
@@ -34,9 +30,6 @@ export default function DashboardPage() {
   const [newRepoDescription, setNewRepoDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [isCreatingRepo, setIsCreatingRepo] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ repo: GitHubRepository } | null>(
-    null
-  );
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -99,18 +92,13 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteRepository = async () => {
-    if (!deleteConfirmation) {
-      return;
-    }
+  const handleEditRepository = (repo: GitHubRepository) => {
+    router.push(`/dashboard/github/${repo.owner.login}/${repo.name}/edit`);
+  };
 
+  const handleDeleteRepository = async (repo: GitHubRepository) => {
     try {
-      await deleteRepository(
-        deleteConfirmation.repo.owner.login,
-        deleteConfirmation.repo.name,
-        user?.githubAccessToken
-      );
-      setDeleteConfirmation(null);
+      await deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken);
       await loadRepositories();
     } catch {
       setError(t('github.deleteFailed'));
@@ -261,33 +249,37 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('github.title')}</CardTitle>
-                  <CardDescription>{t('github.description')}</CardDescription>
+                  <CardTitle>GitHub 仓库管理</CardTitle>
+                  <CardDescription>创建和管理你的 GitHub 仓库</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">{t('github.createRepo')}</h3>
+                    <h3 className="text-lg font-semibold mb-4">创建新仓库</h3>
                     <form onSubmit={handleCreateRepository} className="space-y-4">
-                      <div>
-                        <Label htmlFor="repo-name">{t('github.repoName')}</Label>
-                        <Input
-                          id="repo-name"
-                          placeholder="my-awesome-repo"
-                          value={newRepoName}
-                          onChange={(e) => setNewRepoName(e.target.value)}
-                          required
-                          className="max-w-md mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="repo-description">{t('github.repoDescription')}</Label>
-                        <Input
-                          id="repo-description"
-                          placeholder="Repository description"
-                          value={newRepoDescription}
-                          onChange={(e) => setNewRepoDescription(e.target.value)}
-                          className="max-w-md mt-1"
-                        />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="repo-name">
+                            仓库名称 <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id="repo-name"
+                            placeholder="my-awesome-repo"
+                            value={newRepoName}
+                            onChange={(e) => setNewRepoName(e.target.value)}
+                            required
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="repo-description">描述</Label>
+                          <Input
+                            id="repo-description"
+                            placeholder="Repository description"
+                            value={newRepoDescription}
+                            onChange={(e) => setNewRepoDescription(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
@@ -298,82 +290,31 @@ export default function DashboardPage() {
                           className="h-4 w-4"
                         />
                         <Label htmlFor="repo-private" className="cursor-pointer">
-                          {t('github.privateRepo')}
+                          设为私有仓库
                         </Label>
                       </div>
                       <Button type="submit" disabled={isCreatingRepo || !newRepoName.trim()}>
-                        {isCreatingRepo ? t('github.creating') : t('github.createButton')}
+                        {isCreatingRepo ? '创建中...' : '创建仓库'}
                       </Button>
                     </form>
                   </div>
 
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      {t('github.myRepos', { count: String(repositories.length) })}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold mb-4">
+                      我的仓库 ({repositories.length})
                     </h3>
-                    {isLoadingRepos ? (
-                      <p className="text-sm text-muted-foreground">{t('github.loading')}</p>
-                    ) : repositories.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">{t('github.noRepos')}</p>
-                    ) : (
-                      <div className="grid gap-4">
-                        {repositories.map((repo) => (
-                          <div
-                            key={repo.id}
-                            className="flex items-start justify-between p-4 border rounded-lg bg-white dark:bg-zinc-900"
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={repo.html_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline font-medium"
-                                >
-                                  {repo.full_name}
-                                </a>
-                                {repo.private && (
-                                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
-                                    Private
-                                  </span>
-                                )}
-                              </div>
-                              {repo.description !== null &&
-                                repo.description !== undefined &&
-                                repo.description !== '' && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {repo.description}
-                                  </p>
-                                )}
-                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                                <span>
-                                  {repo.language !== null && repo.language !== undefined
-                                    ? repo.language
-                                    : t('github.unknownLanguage')}
-                                </span>
-                                <span>⭐ {repo.stargazers_count}</span>
-                                <span>🍴 {repo.forks_count}</span>
-                                <span>🔍 {repo.watchers_count}</span>
-                              </div>
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setDeleteConfirmation({ repo })}
-                            >
-                              {t('common.delete')}
-                            </Button>
-                          </div>
-                        ))}
+                    {error && (
+                      <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md">
+                        {error}
                       </div>
                     )}
+                    <RepositoriesTable
+                      repositories={repositories}
+                      isLoading={isLoadingRepos}
+                      onEdit={handleEditRepository}
+                      onDelete={handleDeleteRepository}
+                    />
                   </div>
-
-                  {error !== null && error !== undefined && error !== '' && (
-                    <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded">
-                      {error}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -476,33 +417,6 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
-
-      {deleteConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full">
-            <CardHeader>
-              <CardTitle>{t('deleteConfirmation.title')}</CardTitle>
-              <CardDescription
-                dangerouslySetInnerHTML={{
-                  __html: t('deleteConfirmation.description', {
-                    repo: deleteConfirmation.repo.full_name,
-                  }),
-                }}
-              />
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDeleteConfirmation(null)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button variant="destructive" onClick={handleDeleteRepository}>
-                  {t('common.confirm')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Suspense } from 'react';
 import './globals.css';
 import { AuthProvider, ThemeProvider } from '@/components/providers';
 import { I18nProvider } from '@/components/providers/i18n-provider';
@@ -53,7 +54,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <AuthProvider>{children}</AuthProvider>
+            <Suspense>
+              <AuthProvider>{children}</AuthProvider>
+            </Suspense>
           </ThemeProvider>
         </I18nProvider>
       </body>
