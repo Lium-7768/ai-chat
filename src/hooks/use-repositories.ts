@@ -12,10 +12,10 @@ import type { GitHubRepository, GitHubCreateRepositoryParams } from '@/types';
 // Query keys
 export const repositoryKeys = {
   all: ['repositories'] as const,
-  lists: () => ['repositories', 'list'] as const,
-  list: () => ['repositories', 'list'] as const,
-  details: () => ['repositories', 'detail'] as const,
-  detail: (owner: string, repo: string) => ['repositories', 'detail', owner, repo] as const,
+  lists: () => [...repositoryKeys.all, 'list'] as const,
+  list: () => [...repositoryKeys.all, 'list'] as const,
+  details: () => [...repositoryKeys.all, 'detail'] as const,
+  detail: (owner: string, repo: string) => [...repositoryKeys.all, 'detail', owner, repo] as const,
 };
 
 /**
@@ -66,7 +66,7 @@ export function useCreateRepository() {
     }) => createRepository(params, token),
     onSuccess: () => {
       void toast.success('仓库创建成功');
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
     onError: (error: Error) => {
       void toast.error(`创建失败: ${error.message}`);
@@ -95,7 +95,7 @@ export function useUpdateRepository() {
     onSuccess: (_data, variables) => {
       void toast.success('仓库更新成功');
       // Invalidate both list and detail queries
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
       void queryClient.invalidateQueries({
         queryKey: repositoryKeys.detail(variables.owner, variables.repo),
       });
@@ -124,13 +124,13 @@ export function useDeleteRepository() {
     }) => deleteRepository(owner, repo, token),
     onSuccess: () => {
       void toast.success('仓库删除成功');
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
     onError: (error: Error) => {
       // If error is 404, the repository is already deleted - treat as success
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         void toast.success('仓库删除成功');
-        void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
         return;
       }
       void toast.error(`删除失败: ${error.message}`);
@@ -151,13 +151,13 @@ export function useBatchDeleteRepositories() {
     },
     onSuccess: (_, { repos }) => {
       void toast.success(`成功删除 ${repos.length} 个仓库`);
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
     onError: (error: Error) => {
       // If error is 404, the repository is already deleted - treat as success
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         void toast.success('仓库删除成功');
-        void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
         return;
       }
       void toast.error(`批量删除失败: ${error.message}`);
