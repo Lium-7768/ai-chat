@@ -7,12 +7,16 @@ export interface UserPayload {
   userId: string;
   email: string;
   name?: string;
+  provider?: 'github' | 'email';
+  githubAccessToken?: string;
 }
 
 export interface UserInfo {
   id: string;
   email: string;
   name: string;
+  provider?: 'github' | 'email';
+  githubAccessToken?: string;
 }
 
 export async function signToken(payload: UserPayload & { name?: string }): Promise<string> {
@@ -32,6 +36,12 @@ export async function verifyToken(token: string): Promise<UserPayload | null> {
     };
     if (payload.name !== undefined) {
       result.name = payload.name as string;
+    }
+    if (payload.provider !== undefined) {
+      result.provider = payload.provider as 'github' | 'email';
+    }
+    if (payload.githubAccessToken !== undefined) {
+      result.githubAccessToken = payload.githubAccessToken as string;
     }
     return result;
   } catch {

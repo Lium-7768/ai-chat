@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '无效的token' }, { status: 401 });
     }
 
-    // GitHub 用户信息已在 token 中，直接返回
     if (payload.userId.startsWith('github_')) {
       const userName = payload.name ?? payload.email.split('@')[0];
       return NextResponse.json({
@@ -39,11 +38,12 @@ export async function GET(request: NextRequest) {
           id: payload.userId,
           email: payload.email,
           name: userName,
+          provider: 'github',
+          githubAccessToken: payload.githubAccessToken,
         },
       });
     }
 
-    // 测试用户从内存中查找
     const user = testUsers.find((u) => u.id === payload.userId);
 
     if (user === undefined) {
@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        provider: 'email',
       },
     });
   } catch {

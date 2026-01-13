@@ -7,6 +7,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  provider?: 'github' | 'email';
+  githubAccessToken?: string;
 }
 
 interface AuthContextType {
@@ -23,7 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // 检查用户登录状态
   useEffect(() => {
     const checkAuth = async () => {
       try {
