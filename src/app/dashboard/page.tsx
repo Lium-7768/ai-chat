@@ -300,10 +300,8 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold mb-4">
-                      我的仓库 ({repositories.length})
-                    </h3>
-                    {error && (
+                    <h3 className="text-lg font-semibold mb-4">我的仓库 ({repositories.length})</h3>
+                    {error !== null && (
                       <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md">
                         {error}
                       </div>

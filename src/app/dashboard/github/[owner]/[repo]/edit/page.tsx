@@ -36,7 +36,7 @@ export default function EditRepositoryPage() {
         const repo = await getRepository(owner, repoName, user?.githubAccessToken);
         setRepository(repo);
         setName(repo.name);
-        setDescription(repo.description || '');
+        setDescription(repo.description !== null && repo.description !== undefined ? repo.description : '');
         setIsPrivate(repo.private);
       } catch {
         setError('加载仓库信息失败');
@@ -102,7 +102,7 @@ export default function EditRepositoryPage() {
     );
   }
 
-  if (!repository || error) {
+  if (repository === null || error !== null) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -110,7 +110,7 @@ export default function EditRepositoryPage() {
             <CardTitle className="text-red-600">错误</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">{error || '仓库不存在'}</p>
+            <p className="text-muted-foreground mb-4">{error !== null ? error : '仓库不存在'}</p>
             <Button onClick={() => router.push('/dashboard?tab=github')}>返回</Button>
           </CardContent>
         </Card>
@@ -148,9 +148,7 @@ export default function EditRepositoryPage() {
                   className="mt-1"
                   placeholder="my-awesome-repo"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  注意：修改仓库名称会更新 URL
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">注意：修改仓库名称会更新 URL</p>
               </div>
 
               <div>
@@ -178,7 +176,7 @@ export default function EditRepositoryPage() {
                 </Label>
               </div>
 
-              {error && (
+              {error !== null && (
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm">
                   {error}
                 </div>
@@ -241,7 +239,7 @@ export default function EditRepositoryPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">语言</span>
-                <span className="font-medium">{repository.language || '-'}</span>
+                <span className="font-medium">{repository.language !== null && repository.language !== undefined ? repository.language : '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Stars</span>
@@ -286,7 +284,11 @@ export default function EditRepositoryPage() {
                 <span className="text-red-600">此操作无法撤销，仓库中的所有数据将被永久删除。</span>
               </p>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                >
                   取消
                 </Button>
                 <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>

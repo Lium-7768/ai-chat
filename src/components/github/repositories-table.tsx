@@ -51,9 +51,7 @@ export function RepositoriesTable({
         <CardContent className="py-12">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">{t('github.noRepos')}</p>
-            <p className="text-sm text-muted-foreground">
-              创建你的第一个仓库开始使用 GitHub 管理
-            </p>
+            <p className="text-sm text-muted-foreground">创建你的第一个仓库开始使用 GitHub 管理</p>
           </div>
         </CardContent>
       </Card>
@@ -96,12 +94,12 @@ export function RepositoriesTable({
                   </TableCell>
                   <TableCell>
                     <p className="text-sm max-w-xs truncate">
-                      {repo.description || '-'}
+                      {repo.description !== null && repo.description !== undefined ? repo.description : '-'}
                     </p>
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-zinc-100 dark:bg-zinc-800">
-                      {repo.language || '-'}
+                      {repo.language !== null && repo.language !== undefined ? repo.language : '-'}
                     </span>
                   </TableCell>
                   <TableCell>{repo.stargazers_count}</TableCell>
