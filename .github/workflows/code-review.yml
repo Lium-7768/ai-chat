@@ -70,6 +70,38 @@ jobs:
             bun run eslint $files_to_check --format stylish 2>&1 | tee eslint-output.txt || true
           fi
 
+      - name: Setup Python
+        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
+        run: |
+          python3 --version
+          python3 -m venv .strawberry/venv
+
+      - name: Install hallucination detector
+        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
+        run: |
+          .strawberry/venv/bin/pip install --upgrade pip
+          .strawberry/venv/bin/pip install openai pydantic numpy scipy
+
+      - name: Run hallucination detection
+        id: hallucination
+        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
+        continue-on-error: true
+        env:
+          OPENAI_API_KEY: ${{ vars.OPENAI_API_KEY }}
+        run: |
+          echo "Running hallucination detection on code review..."
+
+          # Run the hallucination checker
+          .strawberry/venv/bin/python .strawberry/code_review_checker.py \
+            --strict \
+            --output hallucination-report.json || true
+
+          # Display results
+          if [ -f hallucination-report.json ]; then
+            echo "Hallucination detection results:"
+            cat hallucination-report.json
+          fi
+
       - name: Generate review report
         id: report
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -116,6 +148,7 @@ jobs:
             eslint-report.json
             eslint-output.txt
             review-report.json
+            hallucination-report.json
           if-no-files-found: ignore
 
       - name: Post review comment
@@ -132,6 +165,8 @@ jobs:
             let totalCritical = 0;
             let totalWarnings = 0;
             let grade = 'A+';
+            let hallucinationFlagged = false;
+            let hallucinationSummary = '';
 
             try {
               if (fs.existsSync('review-report.json')) {
@@ -144,6 +179,20 @@ jobs:
                 grade = reviewData.summary.grade;
               }
 
+              // Check for hallucination detection results
+              if (fs.existsSync('hallucination-report.json')) {
+                const hallData = JSON.parse(fs.readFileSync('hallucination-report.json', 'utf8'));
+                hallucinationFlagged = hallData.flagged || false;
+
+                if (hallData.hallucination_check) {
+                  const check = hallData.hallucination_check;
+                  if (check.summary) {
+                    const { claims_scored, flagged_claims } = check.summary;
+                    hallucinationSummary = `检测了 ${claims_scored} 个声明，${flagged_claims} 个被标记`;
+                  }
+                }
+              }
+
               report += `# 🔬 代码审查报告\n\n`;
               report += `## 总体评分\n`;
               report += `- **得分**: ${overallScore}/100\n`;
@@ -152,6 +201,17 @@ jobs:
               report += `- **总问题数**: ${totalIssues}\n`;
               report += `- **错误**: ${totalCritical}\n`;
               report += `- **警告**: ${totalWarnings}\n\n`;
+
+              // Hallucination detection section
+              if (hallucinationSummary) {
+                report += `## 🍓 AI 幻觉检测\n`;
+                report += `- **状态**: ${hallucinationFlagged ? '⚠️ 检测到潜在问题' : '✅ 通过'}\n`;
+                report += `- **详情**: ${hallucinationSummary}\n\n`;
+
+                if (hallucinationFlagged) {
+                  report += `> 💡 检测到 AI 分析可能存在幻觉或缺乏证据支持的声明。建议人工审查相关内容。\n\n`;
+                }
+              }
 
               if (totalCritical > 0) {
                 report += `## 🚨 错误\n`;
