@@ -1,11 +1,12 @@
 # AGENTS.md
 
-This file provides instructions and guidelines for AI coding agents operating in this repository.
+This file provides instructions and guidelines for AI coding agents operating in
+this repository.
 
 ## Project Overview
 
-**Project:** AI Chat
-**Tech Stack:**
+**Project:** AI Chat **Tech Stack:**
+
 - Next.js 16.1.1 (App Router, Server Components)
 - React 19.2.3
 - TypeScript 5 (strict mode)
@@ -15,17 +16,20 @@ This file provides instructions and guidelines for AI coding agents operating in
 ## Development Commands
 
 ### Setup and Installation
+
 ```bash
 bun install
 cp .env.example .env
 ```
 
 ### Development Server
+
 ```bash
 bun run dev
 ```
 
 ### Build Commands
+
 ```bash
 # Build for production
 bun run build
@@ -35,6 +39,7 @@ bun run start
 ```
 
 ### Linting and Formatting
+
 ```bash
 # Run ESLint
 bun run lint
@@ -50,6 +55,7 @@ bun run format:check
 ```
 
 ### Type Checking
+
 ```bash
 # One-time type check
 bun run typecheck
@@ -59,6 +65,7 @@ bun run typecheck:watch
 ```
 
 ### Code Quality Commands
+
 ```bash
 # Run all pre-commit checks
 bun run precommit
@@ -70,6 +77,7 @@ bun run clean
 ## Testing Commands
 
 ### Running Tests
+
 ```bash
 # Run all tests
 bun run test
@@ -91,6 +99,7 @@ bun test -- path=src/lib/utils.test.ts --testNamePattern="should"
 ```
 
 ### Coverage Commands
+
 ```bash
 # Generate coverage report
 bun run test:coverage
@@ -107,18 +116,20 @@ bun run coverage:check
 ### Import Organization
 
 **Use absolute imports from `@/` aliases:**
+
 ```typescript
 // ✅ CORRECT
-import { Button } from '@/components/ui/button'
-import { formatDate } from '@/lib/utils'
-import { useAuth } from '@/hooks'
+import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/utils';
+import { useAuth } from '@/hooks';
 
 // ❌ AVOID
-import { Button } from '../../../components/ui/button'
-import { formatDate } from '../../lib/utils'
+import { Button } from '../../../components/ui/button';
+import { formatDate } from '../../lib/utils';
 ```
 
 **Import order:**
+
 1. React imports (`'react'`, `'react-dom'`)
 2. Third-party libraries (`next/navigation`, `lucide-react`)
 3. Internal imports (`@/components/*`, `@/lib/*`, `@/hooks/*`)
@@ -137,16 +148,15 @@ import type { User } from '@/types';
 import type { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-'use client';
+('use client');
 import { useEffect, useState } from 'react';
 ```
 
 ### Formatting and Spacing
 
-**Use 2 spaces for indentation**
-**Maximum line length: 100 characters**
-**Use trailing commas in multiline arrays/objects**
-**Use single quotes for strings (Prettier default)**
+**Use 2 spaces for indentation** **Maximum line length: 100 characters** **Use
+trailing commas in multiline arrays/objects** **Use single quotes for strings
+(Prettier default)**
 
 ```typescript
 // ✅ CORRECT
@@ -157,15 +167,14 @@ const user = {
 };
 
 // ❌ AVOID
-const user = {id: "123", name: "John Doe", email: "john@example.com"};
+const user = { id: '123', name: 'John Doe', email: 'john@example.com' };
 ```
 
 ### Type Safety
 
-**Always use strict TypeScript**
-**Avoid `any` type**
-**Use explicit return types for public functions**
-**Prefer interfaces over type aliases for object shapes**
+**Always use strict TypeScript** **Avoid `any` type** **Use explicit return
+types for public functions** **Prefer interfaces over type aliases for object
+shapes**
 
 ```typescript
 // ✅ CORRECT
@@ -188,6 +197,7 @@ const getUser = async (id: string) => {
 ```
 
 **Type assertions should be avoided:**
+
 ```typescript
 // ✅ CORRECT
 const element = document.getElementById('app') as HTMLElement;
@@ -198,12 +208,10 @@ const element = <HTMLElement>document.getElementById('app');
 
 ### Naming Conventions
 
-**Components:** PascalCase (`UserProfile.tsx`)
-**Hooks:** camelCase with `use` prefix (`useLocalStorage.ts`)
-**Functions:** camelCase (`formatDate.ts`)
-**Constants:** UPPER_SNAKE_CASE (`API_BASE_URL.ts`)
-**Types:** PascalCase (`User.ts`, `ApiResponse.ts`)
-**Interfaces:** PascalCase (`IUserService.ts`)
+**Components:** PascalCase (`UserProfile.tsx`) **Hooks:** camelCase with `use`
+prefix (`useLocalStorage.ts`) **Functions:** camelCase (`formatDate.ts`)
+**Constants:** UPPER_SNAKE_CASE (`API_BASE_URL.ts`) **Types:** PascalCase
+(`User.ts`, `ApiResponse.ts`) **Interfaces:** PascalCase (`IUserService.ts`)
 
 ```typescript
 // ✅ CORRECT
@@ -233,10 +241,8 @@ export function format_date(date: Date): string {
 
 ### React Hooks Best Practices
 
-**Always use `use client` directive for components using hooks**
-**Follow rules of hooks**
-**Use dependency arrays correctly**
-**Cleanup effects properly**
+**Always use `use client` directive for components using hooks** **Follow rules
+of hooks** **Use dependency arrays correctly** **Cleanup effects properly**
 
 ```typescript
 'use client';
@@ -263,6 +269,7 @@ useEffect(() => {
 ```
 
 **Cleanup functions:**
+
 ```typescript
 // ✅ CORRECT
 useEffect(() => {
@@ -285,10 +292,9 @@ useEffect(() => {
 
 ### Error Handling
 
-**Always handle errors with try-catch**
-**Provide meaningful error messages**
-**Use error boundaries for component-level error handling**
-**Log errors appropriately**
+**Always handle errors with try-catch** **Provide meaningful error messages**
+**Use error boundaries for component-level error handling** **Log errors
+appropriately**
 
 ```typescript
 // ✅ CORRECT
@@ -315,6 +321,7 @@ export async function fetchUser(id: string) {
 ```
 
 **Use React Error Boundaries:**
+
 ```typescript
 'use client';
 
@@ -334,11 +341,9 @@ class ErrorBoundary extends React.Component<Props, State> {
 
 ### Next.js Best Practices
 
-**Use Server Components by default**
-**Only use `'use client'` when necessary (interactive features)**
-**Use Next.js Image component for images**
-**Use dynamic imports for large components**
-**Properly use App Router conventions**
+**Use Server Components by default** **Only use `'use client'` when necessary
+(interactive features)** **Use Next.js Image component for images** **Use
+dynamic imports for large components** **Properly use App Router conventions**
 
 ```typescript
 // ✅ CORRECT - Server Component (default)
@@ -366,6 +371,7 @@ export default function StaticComponent() {
 ```
 
 **Image optimization:**
+
 ```typescript
 import Image from 'next/image';
 
@@ -383,6 +389,7 @@ import Image from 'next/image';
 ```
 
 **Dynamic imports:**
+
 ```typescript
 // ✅ CORRECT
 import dynamic from 'next/dynamic';
@@ -398,9 +405,8 @@ import { HeavyChart } from '@/components/HeavyChart';
 
 ### shadcn/ui Usage
 
-**Always use provided components over native HTML elements**
-**Follow component prop conventions**
-**Use `asChild` for composition patterns**
+**Always use provided components over native HTML elements** **Follow component
+prop conventions** **Use `asChild` for composition patterns**
 
 ```typescript
 // ✅ CORRECT
@@ -435,6 +441,7 @@ export function LoginForm() {
 ```
 
 **Button variants and sizes:**
+
 ```typescript
 // ✅ CORRECT
 <Button variant="default" size="md">Default</Button>
@@ -444,6 +451,7 @@ export function LoginForm() {
 ```
 
 **Use `asChild` for composition:**
+
 ```typescript
 // ✅ CORRECT
 import { Button } from '@/components/ui/button';
@@ -460,10 +468,8 @@ export function NavLink() {
 
 ### Accessibility (a11y)
 
-**Always provide alt text for images**
-**Use semantic HTML elements**
-**Ensure keyboard navigation works**
-**Provide ARIA labels when necessary**
+**Always provide alt text for images** **Use semantic HTML elements** **Ensure
+keyboard navigation works** **Provide ARIA labels when necessary**
 
 ```typescript
 // ✅ CORRECT
@@ -492,10 +498,9 @@ import Image from 'next/image';
 
 ### Performance Optimization
 
-**Use React.memo for expensive components**
-**Use useMemo for expensive computations**
-**Use useCallback for functions passed to children**
-**Avoid unnecessary re-renders**
+**Use React.memo for expensive components** **Use useMemo for expensive
+computations** **Use useCallback for functions passed to children** **Avoid
+unnecessary re-renders**
 
 ```typescript
 // ✅ CORRECT
@@ -532,6 +537,7 @@ export function ExpensiveComponent({ items }: Props) {
 The project includes a custom code review system that automatically checks:
 
 **Code Quality:**
+
 - TypeScript type safety and strict mode
 - React Hooks best practices
 - Code style and formatting
@@ -539,6 +545,7 @@ The project includes a custom code review system that automatically checks:
 - Error handling
 
 **Security:**
+
 - Sensitive data detection (API keys, tokens)
 - XSS/CSRF prevention
 - Input validation
@@ -546,6 +553,7 @@ The project includes a custom code review system that automatically checks:
 - Unsafe function usage (eval, innerHTML)
 
 **Performance:**
+
 - Next.js optimizations (Image component, dynamic imports, ISR)
 - React performance (useMemo, useCallback, React.memo)
 - Bundle size optimization
@@ -553,6 +561,7 @@ The project includes a custom code review system that automatically checks:
 - File size and complexity analysis
 
 **UI/UX:**
+
 - shadcn/ui component usage
 - Accessibility (ARIA, keyboard navigation)
 - Responsive design
@@ -580,6 +589,7 @@ node .claude/skills/code-review/scripts/index.js src/app/page.tsx --output revie
 ### Understanding Review Results
 
 Review scores:
+
 - **A+ (90-100)**: Excellent, meets all best practices
 - **A (85-89)**: Very good quality
 - **B+ (80-84)**: Good, minor improvements needed
@@ -590,6 +600,7 @@ Review scores:
 - **F (<60)**: Must fix all issues
 
 Issue severity:
+
 - **Critical**: Must fix before merging
 - **Warning**: Should fix before merging
 - **Info**: Suggested improvements
@@ -597,18 +608,21 @@ Issue severity:
 ## File Organization
 
 **Components:**
+
 - Server Components: `src/app/` (default)
 - UI Components: `src/components/ui/`
 - Feature Components: `src/components/`
 - Providers: `src/components/providers/`
 
 **Libraries and Utilities:**
+
 - `src/lib/utils.ts` - Utility functions
 - `src/hooks/` - Custom React hooks
 - `src/types/` - TypeScript type definitions
 - `src/config/` - Application configuration
 
 **Routing:**
+
 - App Router: `src/app/`
 - Use `<Link>` from `next/navigation` for navigation
 - Use `useRouter` and `useSearchParams` hooks for programmatic navigation
@@ -618,6 +632,7 @@ Issue severity:
 ### Unit Tests
 
 **Test naming:** Should describe what is being tested
+
 ```typescript
 // ✅ CORRECT
 describe('formatDate', () => {
@@ -639,6 +654,7 @@ describe('tests', () => {
 ```
 
 **Arrange-Act-Assert (AAA) pattern:**
+
 ```typescript
 // Arrange
 const date = new Date('2025-01-01');
@@ -653,8 +669,7 @@ expect(result).toBe(expected);
 
 ### Integration Tests
 
-**Test user flows and features end-to-end**
-**Use real data where appropriate**
+**Test user flows and features end-to-end** **Use real data where appropriate**
 **Test error scenarios**
 
 ```typescript
@@ -730,6 +745,7 @@ Follow Conventional Commits format:
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 Examples:
+
 - `feat(auth): add GitHub OAuth login`
 - `fix(ui): resolve button alignment issue`
 - `docs(readme): update installation instructions`
@@ -755,6 +771,7 @@ Examples:
 **Continuous Integration:** Runs on every push and pull request
 
 **Checks performed:**
+
 1. Checkout code
 2. Setup Bun environment
 3. Install dependencies
@@ -768,11 +785,13 @@ Examples:
 ### Docker Deployment
 
 **Development:**
+
 ```bash
 docker-compose up
 ```
 
 **Production:**
+
 ```bash
 docker-compose up -d
 ```
@@ -782,6 +801,7 @@ docker-compose up -d
 ### TypeScript Errors
 
 **Problem:** "Property 'x' does not exist on type 'Y'"
+
 ```typescript
 // Solution: Ensure type includes the property
 interface User {
@@ -794,9 +814,11 @@ interface User {
 ### ESLint Errors
 
 **Problem:** "No-unused-vars" warning
+
 ```typescript
 // Solution: Use underscore prefix for intentionally unused variables
-const fetchData = async (_id: string) => { // id is intentionally unused
+const fetchData = async (_id: string) => {
+  // id is intentionally unused
   return await fetch(`/api/data`);
 };
 ```
@@ -804,6 +826,7 @@ const fetchData = async (_id: string) => { // id is intentionally unused
 ### Build Errors
 
 **Problem:** "Module not found: @/components/ui/button"
+
 ```bash
 # Solution: Check path aliases in tsconfig.json
 # Ensure file exists at src/components/ui/button.tsx
@@ -811,7 +834,9 @@ const fetchData = async (_id: string) => { // id is intentionally unused
 
 ### Runtime Errors
 
-**Problem:** "Hydration failed because the initial UI does not match what was rendered on the server"
+**Problem:** "Hydration failed because the initial UI does not match what was
+rendered on the server"
+
 ```typescript
 // Solution: Use suppressHydrationWarning prop on html or body element
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -827,7 +852,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 1. **Always run type checking:** `bun run typecheck`
 2. **Always run linting before committing:** `bun run lint:fix`
-3. **Always run code review:** `node .claude/skills/code-review/scripts/index.js <file>`
+3. **Always run code review:**
+   `node .claude/skills/code-review/scripts/index.js <file>`
 4. **Write tests for new features:** Maintain code quality
 5. **Use TypeScript strict mode:** Catch errors early
 6. **Follow shadcn/ui patterns:** Use provided components
@@ -846,6 +872,7 @@ If you encounter issues or need clarification:
 4. Provide error messages and reproduction steps
 
 Remember: When in doubt, prefer code that is:
+
 - Type-safe
 - Well-tested
 - Accessible
