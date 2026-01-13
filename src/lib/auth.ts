@@ -23,16 +23,17 @@ export async function signToken(payload: UserPayload & { name?: string }): Promi
     .sign(key);
 }
 
-export async function verifyToken(
-  token: string
-): Promise<(UserPayload & { name?: string | undefined }) | null> {
+export async function verifyToken(token: string): Promise<UserPayload | null> {
   try {
     const { payload } = await jwtVerify(token, key);
-    return {
+    const result: UserPayload = {
       userId: payload.userId as string,
       email: payload.email as string,
-      name: payload.name as string | undefined,
     };
+    if (payload.name !== undefined) {
+      result.name = payload.name as string;
+    }
+    return result;
   } catch {
     return null;
   }

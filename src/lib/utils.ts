@@ -90,7 +90,7 @@ export function capitalize(str: string): string {
 export function camelCase(str: string): string {
   return str
     .toLowerCase()
-    .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_match, chr) => chr.toUpperCase())
     .replace(/[-_\s]/g, '');
 }
 
@@ -196,6 +196,9 @@ export function formatDateForInput(date: Date | string): string {
 export function parseJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const base64Url = token.split('.')[1];
+    if (base64Url === undefined) {
+      return null;
+    }
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
