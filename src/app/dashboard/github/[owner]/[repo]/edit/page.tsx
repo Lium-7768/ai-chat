@@ -18,11 +18,11 @@ export default function EditRepositoryPage() {
   const repoName = params.repo as string;
 
   // React Query hooks
-  const { data: repository, isLoading, error: queryError } = useRepository(
-    owner,
-    repoName,
-    user?.githubAccessToken
-  );
+  const {
+    data: repository,
+    isLoading,
+    error: queryError,
+  } = useRepository(owner, repoName, user?.githubAccessToken);
   const updateMutation = useUpdateRepository();
   const deleteMutation = useDeleteRepository();
 

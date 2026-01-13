@@ -37,7 +37,16 @@ export function useRepository(owner: string, repo: string, token?: string | null
   return useQuery({
     queryKey: repositoryKeys.detail(owner, repo),
     queryFn: () => getRepository(owner, repo, token),
-    enabled: owner !== null && owner !== undefined && owner !== '' && repo !== null && repo !== undefined && repo !== '' && token !== null && token !== undefined && token !== '',
+    enabled:
+      owner !== null &&
+      owner !== undefined &&
+      owner !== '' &&
+      repo !== null &&
+      repo !== undefined &&
+      repo !== '' &&
+      token !== null &&
+      token !== undefined &&
+      token !== '',
   });
 }
 
@@ -48,8 +57,13 @@ export function useCreateRepository() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ params, token }: { params: GitHubCreateRepositoryParams; token?: string | null }) =>
-      createRepository(params, token),
+    mutationFn: async ({
+      params,
+      token,
+    }: {
+      params: GitHubCreateRepositoryParams;
+      token?: string | null;
+    }) => createRepository(params, token),
     onSuccess: () => {
       void toast.success('仓库创建成功');
       void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
@@ -99,8 +113,15 @@ export function useDeleteRepository() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ owner, repo, token }: { owner: string; repo: string; token?: string | null }) =>
-      deleteRepository(owner, repo, token),
+    mutationFn: async ({
+      owner,
+      repo,
+      token,
+    }: {
+      owner: string;
+      repo: string;
+      token?: string | null;
+    }) => deleteRepository(owner, repo, token),
     onSuccess: () => {
       void toast.success('仓库删除成功');
       void queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() });
@@ -119,9 +140,7 @@ export function useBatchDeleteRepositories() {
 
   return useMutation({
     mutationFn: async ({ repos, token }: { repos: GitHubRepository[]; token?: string | null }) => {
-      await Promise.all(
-        repos.map((repo) => deleteRepository(repo.owner.login, repo.name, token))
-      );
+      await Promise.all(repos.map((repo) => deleteRepository(repo.owner.login, repo.name, token)));
     },
     onSuccess: (_, { repos }) => {
       void toast.success(`成功删除 ${repos.length} 个仓库`);

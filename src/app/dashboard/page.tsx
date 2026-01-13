@@ -156,15 +156,21 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-3">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.userId')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('dashboard.userId')}
+                      </p>
                       <p className="text-lg">{user.id}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.email')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('dashboard.email')}
+                      </p>
                       <p className="text-lg">{user.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{t('dashboard.username')}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {t('dashboard.username')}
+                      </p>
                       <p className="text-lg">{user.name}</p>
                     </div>
                   </div>
@@ -203,7 +209,9 @@ export default function DashboardPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('dashboard.loginMethod')}</span>
-                        <span>{user.provider === 'github' ? 'GitHub OAuth' : t('common.email')}</span>
+                        <span>
+                          {user.provider === 'github' ? 'GitHub OAuth' : t('common.email')}
+                        </span>
                       </div>
                       {user.provider === 'github' && (
                         <div className="flex justify-between">
@@ -266,7 +274,10 @@ export default function DashboardPage() {
                           设为私有仓库
                         </Label>
                       </div>
-                      <Button type="submit" disabled={createRepoMutation.isPending || !newRepoName.trim()}>
+                      <Button
+                        type="submit"
+                        disabled={createRepoMutation.isPending || !newRepoName.trim()}
+                      >
                         {createRepoMutation.isPending ? '创建中...' : '创建仓库'}
                       </Button>
                     </form>
