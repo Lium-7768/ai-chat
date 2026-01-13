@@ -105,6 +105,18 @@ export default function DashboardPage() {
     }
   };
 
+  const handleBatchDeleteRepositories = async (repos: GitHubRepository[]) => {
+    try {
+      // 并发删除所有选中的仓库
+      await Promise.all(
+        repos.map((repo) => deleteRepository(repo.owner.login, repo.name, user?.githubAccessToken))
+      );
+      await loadRepositories();
+    } catch {
+      setError(`批量删除失败：已删除 ${repos.length} 个仓库中的部分仓库`);
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -311,6 +323,7 @@ export default function DashboardPage() {
                       isLoading={isLoadingRepos}
                       onEdit={handleEditRepository}
                       onDelete={handleDeleteRepository}
+                      onBatchDelete={handleBatchDeleteRepositories}
                     />
                   </div>
                 </CardContent>

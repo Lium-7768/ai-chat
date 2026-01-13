@@ -19,6 +19,7 @@ interface RepositoriesTableProps {
   isLoading: boolean;
   onEdit: (repo: GitHubRepository) => void;
   onDelete: (repo: GitHubRepository) => void;
+  onBatchDelete: (repos: GitHubRepository[]) => void;
 }
 
 export function RepositoriesTable({
@@ -26,9 +27,41 @@ export function RepositoriesTable({
   isLoading,
   onEdit,
   onDelete,
+  onBatchDelete,
 }: RepositoriesTableProps) {
   const { t } = useI18n();
   const [deleteConfirmation, setDeleteConfirmation] = useState<GitHubRepository | null>(null);
+  const [batchDeleteConfirmation, setBatchDeleteConfirmation] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const selectedCount = selectedIds.size;
+  const allSelected = repositories.length > 0 && selectedCount === repositories.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+
+  const handleToggleSelect = (repoId: number) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(repoId)) {
+      newSelected.delete(repoId);
+    } else {
+      newSelected.add(repoId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleToggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(repositories.map((repo) => repo.id)));
+    }
+  };
+
+  const handleBatchDelete = () => {
+    const selectedRepos = repositories.filter((repo) => selectedIds.has(repo.id));
+    onBatchDelete(selectedRepos);
+    setBatchDeleteConfirmation(false);
+    setSelectedIds(new Set());
+  };
 
   if (isLoading) {
     return (
@@ -60,11 +93,50 @@ export function RepositoriesTable({
 
   return (
     <>
+      {/* 批量操作栏 */}
+      {selectedCount > 0 && (
+        <Card className="mb-4 border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                已选择 <span className="text-blue-600 dark:text-blue-400">{selectedCount}</span>{' '}
+                个仓库
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+                  取消选择
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBatchDeleteConfirmation(true)}
+                >
+                  批量删除
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate = someSelected;
+                      }
+                    }}
+                    onChange={handleToggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                </TableHead>
                 <TableHead>仓库</TableHead>
                 <TableHead>描述</TableHead>
                 <TableHead>语言</TableHead>
@@ -76,7 +148,18 @@ export function RepositoriesTable({
             </TableHeader>
             <TableBody>
               {repositories.map((repo) => (
-                <TableRow key={repo.id}>
+                <TableRow
+                  key={repo.id}
+                  className={selectedIds.has(repo.id) ? 'bg-blue-50 dark:bg-blue-950/20' : ''}
+                >
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(repo.id)}
+                      onChange={() => handleToggleSelect(repo.id)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                  </TableCell>
                   <TableCell>
                     <div>
                       <a
@@ -94,7 +177,9 @@ export function RepositoriesTable({
                   </TableCell>
                   <TableCell>
                     <p className="text-sm max-w-xs truncate">
-                      {repo.description !== null && repo.description !== undefined ? repo.description : '-'}
+                      {repo.description !== null && repo.description !== undefined
+                        ? repo.description
+                        : '-'}
                     </p>
                   </TableCell>
                   <TableCell>
@@ -168,7 +253,7 @@ export function RepositoriesTable({
         </CardContent>
       </Card>
 
-      {/* 删除确认对话框 */}
+      {/* 单个删除确认对话框 */}
       {deleteConfirmation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="max-w-md w-full">
@@ -190,6 +275,39 @@ export function RepositoriesTable({
                     setDeleteConfirmation(null);
                   }}
                 >
+                  确认删除
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* 批量删除确认对话框 */}
+      {batchDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-2">确认批量删除仓库</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                你确定要删除 <strong className="text-red-600">{selectedCount}</strong> 个仓库吗？
+                <br />
+                <span className="text-red-600">此操作无法撤销，所有仓库中的数据将被永久删除。</span>
+              </p>
+              <div className="max-h-40 overflow-y-auto mb-4 p-3 bg-zinc-100 dark:bg-zinc-800 rounded-md">
+                {repositories
+                  .filter((repo) => selectedIds.has(repo.id))
+                  .map((repo) => (
+                    <div key={repo.id} className="text-sm py-1">
+                      • {repo.full_name}
+                    </div>
+                  ))}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setBatchDeleteConfirmation(false)}>
+                  取消
+                </Button>
+                <Button variant="destructive" onClick={handleBatchDelete}>
                   确认删除
                 </Button>
               </div>
