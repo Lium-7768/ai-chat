@@ -64,12 +64,20 @@ export function useCreateRepository() {
       params: GitHubCreateRepositoryParams;
       token?: string | null;
     }) => createRepository(params, token),
-    onSuccess: () => {
+    onSuccess: (newRepo) => {
       void toast.success('仓库创建成功');
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
+      // Add new repository to the list
+      void queryClient.setQueryData<GitHubRepository[]>(repositoryKeys.list(), (old = []) => [
+        newRepo,
+        ...old,
+      ]);
     },
     onError: (error: Error) => {
       void toast.error(`创建失败: ${error.message}`);
+    },
+    onSettled: () => {
+      // Refetch to ensure server state
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
   });
 }
@@ -92,16 +100,29 @@ export function useUpdateRepository() {
       params: { name?: string; description?: string; private?: boolean };
       token?: string | null;
     }) => updateRepository(owner, repo, params, token),
-    onSuccess: (_data, variables) => {
+    onSuccess: (updatedRepo, variables) => {
       void toast.success('仓库更新成功');
-      // Invalidate both list and detail queries
+      // Update repository in the list
+      void queryClient.setQueryData<GitHubRepository[]>(repositoryKeys.list(), (old = []) =>
+        old.map((r) =>
+          r.owner.login === variables.owner && r.name === variables.repo ? updatedRepo : r
+        )
+      );
+      // Update detail query
+      void queryClient.setQueryData(
+        repositoryKeys.detail(variables.owner, variables.repo),
+        updatedRepo
+      );
+    },
+    onError: (error: Error) => {
+      void toast.error(`更新失败: ${error.message}`);
+    },
+    onSettled: (_data, _error, variables) => {
+      // Refetch to ensure server state
       void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
       void queryClient.invalidateQueries({
         queryKey: repositoryKeys.detail(variables.owner, variables.repo),
       });
-    },
-    onError: (error: Error) => {
-      void toast.error(`更新失败: ${error.message}`);
     },
   });
 }
@@ -122,18 +143,39 @@ export function useDeleteRepository() {
       repo: string;
       token?: string | null;
     }) => deleteRepository(owner, repo, token),
+    onMutate: async ({ owner, repo }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: repositoryKeys.all });
+
+      // Snapshot previous value
+      const previousRepos = queryClient.getQueryData<GitHubRepository[]>(repositoryKeys.list());
+
+      // Optimistically update to the new value
+      void queryClient.setQueryData<GitHubRepository[]>(repositoryKeys.list(), (old = []) =>
+        old.filter((r) => !(r.owner.login === owner && r.name === repo))
+      );
+
+      // Return context with previous value
+      return { previousRepos };
+    },
     onSuccess: () => {
       void toast.success('仓库删除成功');
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
       // If error is 404, the repository is already deleted - treat as success
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         void toast.success('仓库删除成功');
-        void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
         return;
       }
+      // Rollback to previous value
+      if (context?.previousRepos !== undefined) {
+        void queryClient.setQueryData(repositoryKeys.list(), context.previousRepos);
+      }
       void toast.error(`删除失败: ${error.message}`);
+    },
+    onSettled: () => {
+      // Refetch to ensure server state
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
     retry: false,
   });
@@ -149,18 +191,42 @@ export function useBatchDeleteRepositories() {
     mutationFn: async ({ repos, token }: { repos: GitHubRepository[]; token?: string | null }) => {
       await Promise.all(repos.map((repo) => deleteRepository(repo.owner.login, repo.name, token)));
     },
+    onMutate: async ({ repos }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: repositoryKeys.all });
+
+      // Snapshot previous value
+      const previousRepos = queryClient.getQueryData<GitHubRepository[]>(repositoryKeys.list());
+
+      // Create a set of repos to delete for quick lookup
+      const reposToDelete = new Set(repos.map((r) => `${r.owner.login}/${r.name}`));
+
+      // Optimistically update to the new value
+      void queryClient.setQueryData<GitHubRepository[]>(repositoryKeys.list(), (old = []) =>
+        old.filter((r) => !reposToDelete.has(`${r.owner.login}/${r.name}`))
+      );
+
+      // Return context with previous value
+      return { previousRepos };
+    },
     onSuccess: (_, { repos }) => {
       void toast.success(`成功删除 ${repos.length} 个仓库`);
-      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
       // If error is 404, the repository is already deleted - treat as success
       if (error.message.includes('404') || error.message.includes('Not Found')) {
         void toast.success('仓库删除成功');
-        void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
         return;
       }
+      // Rollback to previous value
+      if (context?.previousRepos !== undefined) {
+        void queryClient.setQueryData(repositoryKeys.list(), context.previousRepos);
+      }
       void toast.error(`批量删除失败: ${error.message}`);
+    },
+    onSettled: () => {
+      // Refetch to ensure server state
+      void queryClient.invalidateQueries({ queryKey: repositoryKeys.all });
     },
     retry: false,
   });
