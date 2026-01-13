@@ -53,21 +53,22 @@ jobs:
 
       - name: Run code review
         if: steps.changed-files.outputs.any_changed == 'true'
+        id: code-review
+        continue-on-error: true
         run: |
           echo "Changed files:"
           echo "${{ steps.changed-files.outputs.all_changed_files }}"
 
-          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "Creating combined review report for src/ directory..."
+          node .claude/skills/code-review/scripts/index.js "src/" --output "combined-review.json"
 
-          for file in $changed_files; do
-            if [ -f "$file" ]; then
-              echo "Reviewing: $file"
-              node .claude/skills/code-review/scripts/index.js "$file" --output "review-$(basename $file .json).json" || true
-            fi
-          done
-
-          echo "Creating combined review report..."
-          node .claude/skills/code-review/scripts/index.js "src/" --directory --output "combined-review.json" || true
+      - name: Upload review report
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-review-report
+          path: combined-review.json
+          if-no-files-found: ignore
 
       - name: Post review comment
         if: github.event_name == 'pull_request' && steps.changed-files.outputs.any_changed == 'true'
@@ -156,11 +157,17 @@ jobs:
                 });
               } else {
                 report += `# 🔬 代码审查报告\n\n`;
-                report += `无法读取审查报告。请查看 Actions 日志获取详细信息。\n`;
+                report += `⚠️ 无法读取审查报告文件。\n\n`;
+                report += `可能的原因：\n`;
+                report += `- 代码审查脚本执行失败\n`;
+                report += `- 报告文件未生成\n\n`;
+                report += `请查看 [Actions 日志](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) 获取详细信息。\n`;
+                report += `\n你也可以从 Artifacts 中下载完整的审查报告。`;
               }
             } catch (error) {
               report = `# 🔬 代码审查报告\n\n`;
-              report += `生成报告时出错: ${error.message}\n`;
+              report += `❌ 生成报告时出错: ${error.message}\n\n`;
+              report += `请查看 [Actions 日志](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) 获取详细信息。`;
             }
 
             const { owner, repo, number } = context.issue;
@@ -168,6 +175,6 @@ jobs:
 
             try {
               await github.rest.issues.createComment(comment);
-            } catch (error) {
-              console.error('Failed to create comment:', error);
+            } catch (commentError) {
+              console.error('Failed to create comment:', commentError);
             }
