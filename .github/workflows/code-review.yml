@@ -76,11 +76,11 @@ jobs:
           python3 --version
           python3 -m venv .strawberry/venv
 
-      - name: Install hallucination detector
+      - name: Install pythea
         if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
         run: |
           .strawberry/venv/bin/pip install --upgrade pip
-          .strawberry/venv/bin/pip install openai pydantic numpy scipy
+          .strawberry/venv/bin/pip install pythea
 
       - name: Run hallucination detection
         id: hallucination
@@ -91,10 +91,12 @@ jobs:
         run: |
           echo "Running hallucination detection on code review..."
 
-          # Run the hallucination checker
-          .strawberry/venv/bin/python .strawberry/code_review_checker.py \
-            --strict \
-            --output hallucination-report.json || true
+          # Run factual recall audit
+          .strawberry/venv/bin/python -m strawberry.factual_recall \
+            --backend openai \
+            --model gpt-4o-mini \
+            --question "Review the following code changes for quality and potential issues" \
+            --out hallucination-report.json || true
 
           # Display results
           if [ -f hallucination-report.json ]; then

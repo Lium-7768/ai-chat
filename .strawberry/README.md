@@ -1,195 +1,168 @@
 # Strawberry Toolkit - 幻觉检测集成
 
-本项目集成了
-[Strawberry Toolkit](https://github.com/leochlon/pythea)，用于在代码审查过程中检测 AI 生成的分析和评论中的幻觉。
-
-## 功能特性
-
-- **程序性幻觉检测**: 检测 AI 分析中可能存在的幻觉和缺乏证据支持的声明
-- **自动代码审查**: 在 PR 创建时自动运行，结果直接显示在 PR 评论中
-- **CLI 工具**: 提供命令行工具用于手动检测
-- **CI/CD 集成**: 与 GitHub Actions 无缝集成
+本项目集成了官方 [pythea](https://github.com/leochlon/pythea) 包，用于在代码审查过程中检测 AI 生成的分析和评论中的幻觉。
 
 ## 安装
 
-```bash
-# Python 虚拟环境已在项目中配置
-# 依赖会在 CI 流程中自动安装
-
-# 本地使用需安装 Python 依赖
-python3 -m venv .strawberry/venv
-.strawberry/venv/bin/pip install -r .strawberry/requirements.txt
-```
-
-## 使用方法
-
-### 1. GitHub Actions 自动审查
-
-每次创建或更新 PR 时，幻觉检测会自动运行：
-
-1. 设置 GitHub Secret `OPENAI_API_KEY`
-2. 在 PR 中会看到包含幻觉检测结果的审查报告
-
-### 2. 本地 CLI 使用
-
-#### 检测单个声明
+### 方式 1: 使用系统 Python
 
 ```bash
-.strawberry/venv/bin/python .strawberry/detect_hallucination.py \
-  --answer "函数返回 42 [S0] 并优雅处理错误 [S1]" \
-  --spans "def calculate(): return 42;;try: ... except: raise"
+# 安装官方包
+pip install pythea
+
+# 或安装完整功能
+pip install "pythea[offline]"  # 离线探测
+pip install "pythea[vllm]"     # 本地推理
 ```
 
-#### 使用 JSON 输入
+### 方式 2: 使用虚拟环境（推荐）
 
 ```bash
-.strawberry/venv/bin/python .strawberry/detect_hallucination.py \
-  --file review.json \
-  --output result.json
+cd .strawberry
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# 或 venv\Scripts\activate  # Windows
+pip install pythea
 ```
-
-JSON 格式示例：
-
-```json
-{
-  "answer": "函数返回 42 [S0] 并优雅处理错误 [S1]",
-  "spans": ["def calculate(): return 42", "try: ... except: raise"]
-}
-```
-
-### 3. 代码审查检查器
-
-```bash
-# 检查当前更改
-.strawberry/venv/bin/python .strawberry/code_review_checker.py \
-  --api-key $OPENAI_API_KEY \
-  --strict \
-  --output review-result.json
-```
-
-## 结果解读
-
-### Budget Gap (bits) 含义
-
-| Budget Gap | 含义           | 建议                |
-| ---------- | -------------- | ------------------- |
-| < 0        | 声明有充分支持 | ✅ 可信             |
-| 0 - 2      | 轻度推断       | ⚠️ 可接受，建议验证 |
-| 2 - 10     | 可疑           | 🔍 需要人工审查     |
-| > 10       | 可能是幻觉     | ❌ 不可信，需修正   |
-
-### 报告示例
-
-```json
-{
-  "flagged": true,
-  "summary": {
-    "claims_scored": 2,
-    "flagged_claims": 1,
-    "flagged_idxs": [1]
-  },
-  "details": [
-    {
-      "idx": 0,
-      "claim": "函数返回 42",
-      "flagged": false,
-      "confidence": 0.98,
-      "budget_gap": {
-        "bits": -1.5,
-        "interpretation": "Well-supported by evidence"
-      }
-    },
-    {
-      "idx": 1,
-      "claim": "错误被优雅处理",
-      "flagged": true,
-      "confidence": 0.65,
-      "budget_gap": {
-        "bits": 8.3,
-        "interpretation": "Suspicious - manual review recommended"
-      }
-    }
-  ]
-}
-```
-
-## 配置
-
-### GitHub Secrets
-
-在 GitHub 仓库设置中添加以下 Secret：
-
-- `OPENAI_API_KEY`: OpenAI API 密钥（必需）
 
 ### 环境变量
 
 ```bash
+# 设置 OpenAI API Key
 export OPENAI_API_KEY=sk-...
 ```
 
-## 检测的问题类型
+## 使用方法
 
-### 引用和证据失败
+### 1. MCP 服务器集成（推荐）
 
-- 虚假引用（编造的参考文献）
-- 编造的文档细节
-- 独立于证据的答案（训练数据泄露）
-- 部分证据（声明超出支持范围）
-- 多源混淆（在来源之间发明联系）
-
-### 代码阅读失败
-
-- 堆栈跟踪误读
-- 配置值误读
-- 否定盲区（漏掉 "NOT"）
-- 虚假注释（代码与注释矛盾）
-- SQL 连接/模式误读
-
-### 根因分析失败
-
-- 将相关性声明为因果关系
-- 解释性跳跃陈述为事实
-- 伪装为观察的规定性声明
-
-## MCP 服务器集成（可选）
-
-可以将工具注册到 Claude Code 作为 MCP 服务器使用：
+将工具注册到 Claude Code：
 
 ```bash
 claude mcp add hallucination-detector \
   -e OPENAI_API_KEY=$OPENAI_API_KEY -- \
-  $(pwd)/.strawberry/venv/bin/python -m strawberry.mcp_server
+  python -m strawberry.mcp_server
 ```
 
 然后在 Claude Code 中使用：
-
 - `detect_hallucination`: 自动检测答案中的幻觉
 - `audit_trace_budget`: 审计带有显式引用的声明
 
-## 故障排除
+### 2. CLI 工具
 
-### 1. "OPENAI_API_KEY not set" 错误
-
-确保在 GitHub Secrets 中设置了 `OPENAI_API_KEY`。
-
-### 2. Python 依赖安装失败
+#### 事实召回审计
 
 ```bash
-# 重新创建虚拟环境
-rm -rf .strawberry/venv
-python3 -m venv .strawberry/venv
-.strawberry/venv/bin/pip install -r .strawberry/requirements.txt
+python -m strawberry.factual_recall \
+  --question "Which US senators from Minnesota graduated from Princeton" \
+  --out report.json
 ```
 
-### 3. 幻觉检测没有运行
+#### 综合绑定评估
 
-检查 GitHub Actions 日志，确保 `OPENAI_API_KEY` 已正确设置为 Repository
-Secret（不是 Environment Secret）。
+```bash
+strawberry run \
+  --backend openai \
+  --model gpt-4o-2024-08-06 \
+  --n 200 --M 10 --distance 512 \
+  --query FIRST --null SCRUB_FIRST
+```
+
+#### 思维链审计
+
+```bash
+strawberry cot \
+  --backend openai \
+  --generator_model gpt-4o-mini \
+  --verifier_model gpt-4o-mini \
+  --synthetic --M 10 --distance 256
+```
+
+### 3. Python API
+
+```python
+from pythea import TheaClient
+
+# Thea API Client
+with TheaClient(base_url="https://...") as client:
+    resp = client.unified_answer(
+        question="What is 2+2?",
+        backend="aoai-pool",
+        m=6,
+    )
+    print(resp.get("answer"))
+```
+
+## 检测原理
+
+**核心机制**: 清除引用的证据，测量置信度变化。没有变化？模型在产生幻觉。
+
+**检测问题类型**:
+- RAG 检索但不阅读
+- 思维链引用了忽略的步骤
+- 自验证没有真正检查
+- 引用混淆（装饰性来源）
+
+## CI/CD 集成
+
+GitHub Actions 已配置自动运行幻觉检测：
+
+```yaml
+- name: Run hallucination detection
+  env:
+    OPENAI_API_KEY: ${{ vars.OPENAI_API_KEY }}
+  run: |
+    python -m strawberry.factual_recall \
+      --question "Review code changes" \
+      --out report.json
+```
+
+## Codex Skills
+
+项目包含两个证据优先的代理技能：
+
+1. **rca-fix-agent**: 调试代理
+   - 重现 → 证据 → 假设 → 验证 ROOT_CAUSE → 修复 → 测试
+
+2. **proof-repair-agent**: 证明修复/合成代理
+   - LaTeX + Lean/Coq 机器检查的定理证明
+
+## 结果解读
+
+| Budget Gap (bits) | 含义 | 建议 |
+|---------------------|------|------|
+| < 0 | 声明有充分支持 | ✅ 可信 |
+| 0 - 2 | 轻度推断 | ⚠️ 可接受 |
+| 2 - 10 | 可疑 | 🔍 需要审查 |
+| > 10 | 可能是幻觉 | ❌ 不可信 |
+
+## 故障排除
+
+### 安装失败
+
+```bash
+# 更新 pip
+pip install --upgrade pip
+
+# 使用国内镜像
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pythea
+```
+
+### MCP 服务器无法连接
+
+```bash
+# 验证安装
+python -m strawberry.mcp_server --help
+
+# 检查环境变量
+echo $OPENAI_API_KEY
+```
 
 ## 相关链接
 
-- [Strawberry Toolkit 原始文档](https://github.com/leochlon/pythea/blob/main/strawberry/README.md)
-- [信息论与幻觉检测论文](https://arxiv.org/abs/2501.12345)
+- [官方文档](https://github.com/leochlon/pythea)
+- [论文](https://arxiv.org/abs/2501.xxxxx)
+- [MCP 协议](https://modelcontextprotocol.io/)
 
 ## License
 
