@@ -21,8 +21,19 @@ async function fetchGitHub<T>(
   });
 
   if (!response.ok) {
-    const error: GitHubError = await response.json();
-    throw new Error(error.message || `GitHub API error: ${response.status}`);
+    let errorMessage = `GitHub API error: ${response.status}`;
+    try {
+      const error: GitHubError = await response.json();
+      errorMessage = error.message || errorMessage;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw new Error(errorMessage);
+  }
+
+  // DELETE 请求返回 204 No Content，没有 body
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json();

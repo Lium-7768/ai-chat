@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Suspense } from 'react';
+import { Toaster } from 'sonner';
 import './globals.css';
-import { AuthProvider, ThemeProvider } from '@/components/providers';
+import { AuthProvider, QueryProvider, ThemeProvider } from '@/components/providers';
 import { I18nProvider } from '@/components/providers/i18n-provider';
 
 const geistSans = Geist({
@@ -47,18 +48,32 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <I18nProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Suspense>
-              <AuthProvider>{children}</AuthProvider>
-            </Suspense>
-          </ThemeProvider>
-        </I18nProvider>
+        <QueryProvider>
+          <I18nProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Suspense>
+                <AuthProvider>{children}</AuthProvider>
+              </Suspense>
+            </ThemeProvider>
+          </I18nProvider>
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+                border: '1px solid var(--border)',
+              },
+            }}
+          />
+        </QueryProvider>
       </body>
     </html>
   );

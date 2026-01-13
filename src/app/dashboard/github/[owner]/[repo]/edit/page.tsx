@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getRepository, updateRepository, deleteRepository } from '@/lib/github';
-import { GitHubRepository } from '@/types';
+import { useRepository, useUpdateRepository, useDeleteRepository } from '@/hooks';
+import { toast } from 'sonner';
 
 export default function EditRepositoryPage() {
   const { user } = useAuth();
@@ -17,80 +17,87 @@ export default function EditRepositoryPage() {
   const owner = params.owner as string;
   const repoName = params.repo as string;
 
-  const [repository, setRepository] = useState<GitHubRepository | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const {
+    data: repository,
+    isLoading,
+    error: queryError,
+  } = useRepository(owner, repoName, user?.githubAccessToken);
+  const updateMutation = useUpdateRepository();
+  const deleteMutation = useDeleteRepository();
+
+  // Form state - derived from repository data
+  const initialFormState = useMemo(() => {
+    if (repository !== null && repository !== undefined) {
+      return {
+        name: repository.name,
+        description:
+          repository.description !== null && repository.description !== undefined
+            ? repository.description
+            : '',
+        isPrivate: repository.private,
+      };
+    }
+    return {
+      name: '',
+      description: '',
+      isPrivate: false,
+    };
+  }, [repository]);
+
+  const [name, setName] = useState(initialFormState.name);
+  const [description, setDescription] = useState(initialFormState.description);
+  const [isPrivate, setIsPrivate] = useState(initialFormState.isPrivate);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-
+  // Sync form when repository data changes (using key pattern)
   useEffect(() => {
-    const loadRepository = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const repo = await getRepository(owner, repoName, user?.githubAccessToken);
-        setRepository(repo);
-        setName(repo.name);
-        setDescription(
-          repo.description !== null && repo.description !== undefined ? repo.description : ''
-        );
-        setIsPrivate(repo.private);
-      } catch {
-        setError('加载仓库信息失败');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadRepository();
-  }, [owner, repoName, user?.githubAccessToken]);
+    setName(initialFormState.name);
+    setDescription(initialFormState.description);
+    setIsPrivate(initialFormState.isPrivate);
+  }, [initialFormState]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    setError(null);
 
-    try {
-      const updated = await updateRepository(
+    updateMutation.mutate(
+      {
         owner,
-        repoName,
-        {
+        repo: repoName,
+        params: {
           name,
           description,
           private: isPrivate,
         },
-        user?.githubAccessToken
-      );
-      setRepository(updated);
-      // 如果仓库名称改变了，需要更新路由
-      if (name !== repoName) {
-        router.push(`/dashboard/github/${updated.owner.login}/${updated.name}/edit`);
+        token: user?.githubAccessToken ?? null,
+      },
+      {
+        onSuccess: (updated) => {
+          toast.success('仓库更新成功');
+          // If repository name changed, update URL
+          if (name !== repoName) {
+            router.push(`/dashboard/github/${updated.owner.login}/${updated.name}/edit`);
+          }
+        },
       }
-    } catch {
-      setError('更新仓库失败');
-    } finally {
-      setIsSaving(false);
-    }
+    );
   };
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      await deleteRepository(owner, repoName, user?.githubAccessToken);
-      router.push('/dashboard?tab=github');
-    } catch {
-      setError('删除仓库失败');
-      setShowDeleteConfirm(false);
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleDelete = () => {
+    deleteMutation.mutate(
+      {
+        owner,
+        repo: repoName,
+        token: user?.githubAccessToken ?? null,
+      },
+      {
+        onSuccess: () => {
+          toast.success('仓库删除成功');
+          setShowDeleteConfirm(false);
+          router.push('/dashboard?tab=github');
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -104,7 +111,7 @@ export default function EditRepositoryPage() {
     );
   }
 
-  if (repository === null || error !== null) {
+  if (repository === null || queryError !== null) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -112,7 +119,9 @@ export default function EditRepositoryPage() {
             <CardTitle className="text-red-600">错误</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">{error !== null ? error : '仓库不存在'}</p>
+            <p className="text-muted-foreground mb-4">
+              {queryError instanceof Error ? queryError.message : '仓库不存在'}
+            </p>
             <Button onClick={() => router.push('/dashboard?tab=github')}>返回</Button>
           </CardContent>
         </Card>
@@ -132,9 +141,7 @@ export default function EditRepositoryPage() {
         <Card>
           <CardHeader>
             <CardTitle>编辑仓库</CardTitle>
-            <CardDescription>
-              修改仓库 <strong>{repository.full_name}</strong> 的设置
-            </CardDescription>
+            <CardDescription>修改仓库的设置</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -178,12 +185,6 @@ export default function EditRepositoryPage() {
                 </Label>
               </div>
 
-              {error !== null && (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
-
               <div className="flex items-center justify-between pt-4 border-t">
                 <div>
                   <Button
@@ -203,8 +204,8 @@ export default function EditRepositoryPage() {
                   >
                     取消
                   </Button>
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving ? '保存中...' : '保存更改'}
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? '保存中...' : '保存更改'}
                   </Button>
                 </div>
               </div>
@@ -213,73 +214,75 @@ export default function EditRepositoryPage() {
         </Card>
 
         {/* 仓库信息卡片 */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>仓库信息</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">完整名称</span>
-                <span className="font-medium">{repository.full_name}</span>
+        {repository && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>仓库信息</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">完整名称</span>
+                  <span className="font-medium">{repository.full_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">所有者</span>
+                  <span className="font-medium">{repository.owner.login}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">创建时间</span>
+                  <span className="font-medium">
+                    {new Date(repository.created_at).toLocaleString('zh-CN')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">更新时间</span>
+                  <span className="font-medium">
+                    {new Date(repository.updated_at).toLocaleString('zh-CN')}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">语言</span>
+                  <span className="font-medium">
+                    {repository.language !== null && repository.language !== undefined
+                      ? repository.language
+                      : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Stars</span>
+                  <span className="font-medium">⭐ {repository.stargazers_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Forks</span>
+                  <span className="font-medium">🍴 {repository.forks_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Watchers</span>
+                  <span className="font-medium">👁️ {repository.watchers_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Open Issues</span>
+                  <span className="font-medium">📋 {repository.open_issues_count}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">所有者</span>
-                <span className="font-medium">{repository.owner.login}</span>
+              <div className="mt-4">
+                <a
+                  href={repository.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  在 GitHub 上查看 →
+                </a>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">创建时间</span>
-                <span className="font-medium">
-                  {new Date(repository.created_at).toLocaleString('zh-CN')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">更新时间</span>
-                <span className="font-medium">
-                  {new Date(repository.updated_at).toLocaleString('zh-CN')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">语言</span>
-                <span className="font-medium">
-                  {repository.language !== null && repository.language !== undefined
-                    ? repository.language
-                    : '-'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Stars</span>
-                <span className="font-medium">⭐ {repository.stargazers_count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Forks</span>
-                <span className="font-medium">🍴 {repository.forks_count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Watchers</span>
-                <span className="font-medium">👁️ {repository.watchers_count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Open Issues</span>
-                <span className="font-medium">📋 {repository.open_issues_count}</span>
-              </div>
-            </div>
-            <div className="mt-4">
-              <a
-                href={repository.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                在 GitHub 上查看 →
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* 删除确认对话框 */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && repository && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="max-w-md w-full">
             <div className="p-6">
@@ -293,12 +296,16 @@ export default function EditRepositoryPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowDeleteConfirm(false)}
-                  disabled={isDeleting}
+                  disabled={deleteMutation.isPending}
                 >
                   取消
                 </Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? '删除中...' : '确认删除'}
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? '删除中...' : '确认删除'}
                 </Button>
               </div>
             </div>
