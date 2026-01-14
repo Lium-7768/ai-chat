@@ -74,3 +74,4 @@ next-env.d.ts
 firebase-debug.log
 firebase-debug.log.*
 firebase-debug.*.log
+.venv/

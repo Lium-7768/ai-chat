@@ -84,24 +84,38 @@ jobs:
 
       - name: Run hallucination detection
         id: hallucination
-        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
+        if: steps.changed-files.outputs.any_changed == 'true' && secrets.OPENROUTER_API_KEY != ''
         continue-on-error: true
         env:
-          OPENAI_API_KEY: ${{ vars.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_BASE_URL: https://openrouter.ai/api/v1
         run: |
-          echo "Running hallucination detection on code review..."
+          echo "Running AI hallucination detection on code changes..."
 
-          # Run factual recall audit
-          .strawberry/venv/bin/python -m strawberry.factual_recall \
-            --backend openai \
-            --model gpt-4o-mini \
-            --question "Review the following code changes for quality and potential issues" \
-            --out hallucination-report.json || true
+          # 准备文件列表
+          files_to_check=""
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              files_to_check="$files_to_check $file"
+            fi
+          done < changed_files_list.txt
 
-          # Display results
-          if [ -f hallucination-report.json ]; then
-            echo "Hallucination detection results:"
-            cat hallucination-report.json
+          if [ -n "$files_to_check" ]; then
+            echo "Checking files: $files_to_check"
+
+            # 使用代码审查幻觉检测脚本
+            .strawberry/venv/bin/python .strawberry/code_review_audit.py \
+              --files $files_to_check \
+              --model openai/gpt-4o-mini \
+              --backend-url https://openrouter.ai/api/v1 \
+              --api-key "$OPENROUTER_API_KEY" \
+              --output hallucination-report.json || true
+
+            # 显示结果
+            if [ -f hallucination-report.json ]; then
+              echo "Hallucination detection results:"
+              cat hallucination-report.json
+            fi
           fi
 
       - name: Generate review report
@@ -186,11 +200,22 @@ jobs:
                 const hallData = JSON.parse(fs.readFileSync('hallucination-report.json', 'utf8'));
                 hallucinationFlagged = hallData.flagged || false;
 
-                if (hallData.hallucination_check) {
-                  const check = hallData.hallucination_check;
-                  if (check.summary) {
-                    const { claims_scored, flagged_claims } = check.summary;
-                    hallucinationSummary = `检测了 ${claims_scored} 个声明，${flagged_claims} 个被标记`;
+                if (hallData.total_steps !== undefined) {
+                  const { total_steps, flagged_steps } = hallData;
+                  hallucinationSummary = `检测了 ${total_steps} 个代码声明，${flagged_steps} 个被标记`;
+
+                  // 添加详细信息
+                  if (hallData.details && hallData.details.length > 0) {
+                    const flaggedItems = hallData.details.filter(d => d.flagged);
+                    if (flaggedItems.length > 0) {
+                      hallucinationSummary += '\n\n**标记的声明:**\n';
+                      flaggedItems.slice(0, 5).forEach(item => {
+                        hallucinationSummary += `- ${item.claim.substring(0, 80)}... (Gap: ${item.budget_gap.min.toFixed(2)} bits)\n`;
+                      });
+                      if (flaggedItems.length > 5) {
+                        hallucinationSummary += `- ...还有 ${flaggedItems.length - 5} 个\n`;
+                      }
+                    }
                   }
                 }
               }
