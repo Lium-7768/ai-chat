@@ -8,7 +8,7 @@
 - 🎨 **shadcn/ui** - 美观且可定制的 UI 组件库
 - 🛡️ **TypeScript** - 完整的类型安全
 - 🎯 **ESLint + Prettier** - 代码质量和格式化
-- 🔬 **代码审查 Skill** - 自动化的代码质量、安全性、性能和 UI/UX 审查
+- 🍓 **Strawberry Toolkit** - AI 幻觉检测，确保代码分析的准确性
 - 📱 **响应式设计** - 完美支持移动设备
 - ♿ **无障碍性** - 符合 WCAG 2.1 AA 标准
 - ⚡ **性能优化** - 优化的 bundle 和加载时间
@@ -115,7 +115,7 @@ bun run clean
 - **ESLint**: 代码质量检查
 - **Prettier**: 代码格式化
 - **TypeScript**: 类型检查
-- **Code Review Skill**: 自动化代码审查
+- **Strawberry Toolkit**: AI 幻觉检测
 
 ### Git 提交前
 
@@ -127,38 +127,42 @@ npm run precommit
 
 这会自动修复 linting 问题并格式化代码。
 
-## 🔬 代码审查
+## 🍓 AI 幻觉检测
 
-项目包含一个自定义的代码审查 Skill，可以自动检查：
+项目集成了
+[Strawberry Toolkit](https://github.com/leochlon/pythea)，用于检测 AI 生成代码分析中的幻觉。
 
-- **代码质量**: TypeScript 类型、React Hooks、代码风格
-- **安全性**: 敏感信息、XSS/CSRF、输入验证
-- **性能**: Next.js 优化、React 性能、bundle 大小
-- **UI/UX**: shadcn/ui 使用、可访问性、响应式设计
+### 功能
+
+- **程序性幻觉检测**: 检测 AI 分析中缺乏证据支持的声明
+- **CI/CD 集成**: 在 PR 创建时自动运行
+- **本地 CLI 工具**: 支持手动检测
 
 ### 使用方式
 
-**手动审查**
+**GitHub Actions 自动运行**
+
+PR 创建时会自动运行幻觉检测，结果会显示在审查评论中。
+
+**本地使用**
 
 ```bash
-# 审查单个文件
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx
+# 设置 API Key
+export OPENAI_API_KEY=sk-...
 
-# 批量审查目录
-node .claude/skills/code-review/scripts/index.js src --directory
-
-# 只审查特定维度
-node .claude/skills/code-review/scripts/index.js src/app/page.tsx --only-security
+# 检测代码分析中的幻觉
+.strawberry/venv/bin/python .strawberry/detect_hallucination.py \
+  --answer "函数返回 42 [S0]" \
+  --spans "def calculate(): return 42"
 ```
 
-**自动触发**
+### 配置
 
-- 文件写入前：自动进行代码质量检查
-- 文件写入后：对 >1KB 文件进行完整审查
-- Pull Request：自动运行并添加评论
+在 GitHub Repository Secrets 中添加：
 
-详细信息请查看
-[`.claude/skills/code-review/README.md`](.claude/skills/code-review/README.md)。
+- `OPENAI_API_KEY`: OpenAI API 密钥
+
+详细信息请查看 [`.strawberry/README.md`](.strawberry/README.md)。
 
 ## 🧪 测试
 

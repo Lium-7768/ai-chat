@@ -101,7 +101,8 @@ return result;
 GitHub Actions workflows (`.github/workflows/`):
 
 - **ci.yml** - Runs lint, typecheck, and build on push/PR
-- **code-review.yml** - Automated code review for PRs using custom skill
+- **code-review.yml** - Automated code review for PRs using ESLint and
+  Strawberry Toolkit
 
 Both workflows use **bun** (not npm), with bun-aware caching.
 

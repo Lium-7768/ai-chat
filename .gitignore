@@ -52,6 +52,11 @@ next-env.d.ts
 *.swo
 .cache
 
+# Strawberry Toolkit (Python venv)
+.strawberry/venv/
+.strawberry/__pycache__/
+.strawberry/*.pyc
+
 # Turbo
 .turbo
 
@@ -69,3 +74,4 @@ next-env.d.ts
 firebase-debug.log
 firebase-debug.log.*
 firebase-debug.*.log
+.venv/

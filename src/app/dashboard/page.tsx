@@ -20,7 +20,7 @@ import {
   useBatchDeleteRepositories,
 } from '@/hooks';
 
-type Tab = 'overview' | 'github' | 'settings';
+type Tab = 'overview' | 'github' | 'ai-chat' | 'settings';
 
 export default function DashboardPage() {
   const { user, isLoading, logout } = useAuth();
@@ -135,6 +135,9 @@ export default function DashboardPage() {
                   {t('dashboard.tabs.github')}
                 </SidebarItem>
               )}
+              <SidebarItem active={activeTab === 'ai-chat'} onClick={() => setActiveTab('ai-chat')}>
+                AI 助手
+              </SidebarItem>
               <SidebarItem
                 active={activeTab === 'settings'}
                 onClick={() => setActiveTab('settings')}
@@ -223,6 +226,44 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'ai-chat' && (
+            <div className="h-full flex flex-col">
+              <Card className="flex-1 flex flex-col">
+                <CardHeader className="border-b">
+                  <CardTitle>AI 助手</CardTitle>
+                  <CardDescription>与 AI 对话，获取帮助和建议</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col p-0">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                        AI
+                      </div>
+                      <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg px-4 py-2 max-w-[80%]">
+                        <p className="text-sm">你好！我是 AI 助手，有什么可以帮你的吗？</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t p-4">
+                    <form
+                      className="flex gap-2"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="输入你的消息..."
+                        className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-900 dark:border-zinc-700"
+                      />
+                      <Button type="submit">发送</Button>
+                    </form>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 
