@@ -84,13 +84,20 @@ jobs:
 
       - name: Run hallucination detection
         id: hallucination
-        if: steps.changed-files.outputs.any_changed == 'true' && secrets.OPENROUTER_API_KEY != ''
+        if: steps.changed-files.outputs.any_changed == 'true'
         continue-on-error: true
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENAI_BASE_URL: https://openrouter.ai/api/v1
         run: |
           echo "Running AI hallucination detection on code changes..."
+
+          # 检查 API Key 是否设置
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "OPENROUTER_API_KEY not set, skipping hallucination detection"
+            echo '{"flagged":false,"total_steps":0,"flagged_steps":0,"message":"API Key not configured"}' > hallucination-report.json
+            exit 0
+          fi
 
           # 准备文件列表
           files_to_check=""
