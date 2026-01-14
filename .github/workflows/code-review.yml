@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+  pull_requests: write
 
 jobs:
   code-review:
@@ -43,7 +43,8 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v44
         with:
-          files: "**/*.{ts,tsx,js,jsx}"
+          files: |
+            **/*.{ts,tsx,js,jsx}
           files_ignore: |
             node_modules/**
             .next/**
@@ -70,61 +71,6 @@ jobs:
             bun run eslint $files_to_check --format stylish 2>&1 | tee eslint-output.txt || true
           fi
 
-      - name: Setup Python
-        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
-        run: |
-          python3 --version
-          python3 -m venv .strawberry/venv
-
-      - name: Install pythea
-        if: steps.changed-files.outputs.any_changed == 'true' && vars.OPENAI_API_KEY != ''
-        run: |
-          .strawberry/venv/bin/pip install --upgrade pip
-          .strawberry/venv/bin/pip install pythea
-
-      - name: Run hallucination detection
-        id: hallucination
-        if: steps.changed-files.outputs.any_changed == 'true'
-        continue-on-error: true
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENAI_BASE_URL: https://openrouter.ai/api/v1
-        run: |
-          echo "Running AI hallucination detection on code changes..."
-
-          # 检查 API Key 是否设置
-          if [ -z "$OPENROUTER_API_KEY" ]; then
-            echo "OPENROUTER_API_KEY not set, skipping hallucination detection"
-            echo '{"flagged":false,"total_steps":0,"flagged_steps":0,"message":"API Key not configured"}' > hallucination-report.json
-            exit 0
-          fi
-
-          # 准备文件列表
-          files_to_check=""
-          while IFS= read -r file; do
-            if [ -f "$file" ]; then
-              files_to_check="$files_to_check $file"
-            fi
-          done < changed_files_list.txt
-
-          if [ -n "$files_to_check" ]; then
-            echo "Checking files: $files_to_check"
-
-            # 使用代码审查幻觉检测脚本
-            .strawberry/venv/bin/python .strawberry/code_review_audit.py \
-              --files $files_to_check \
-              --model openai/gpt-4o-mini \
-              --backend-url https://openrouter.ai/api/v1 \
-              --api-key "$OPENROUTER_API_KEY" \
-              --output hallucination-report.json || true
-
-            # 显示结果
-            if [ -f hallucination-report.json ]; then
-              echo "Hallucination detection results:"
-              cat hallucination-report.json
-            fi
-          fi
-
       - name: Generate review report
         id: report
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -138,7 +84,7 @@ jobs:
             warning_count=$(jq '[.[].warningCount] | add' eslint-report.json 2>/dev/null || echo "0")
             file_count=$(jq 'length' eslint-report.json 2>/dev/null || echo "0")
 
-            # Calculate score
+            # Calculate score (simple formula)
             if [ "$error_count" -eq 0 ] && [ "$warning_count" -eq 0 ]; then
               score=100
               grade="A+"
@@ -154,12 +100,34 @@ jobs:
               score=0
             fi
 
-            # Create report JSON using printf
-            printf '{"summary":{"overallScore":%s,"grade":"%s","totalFiles":%s,"totalIssues":%s,"critical":%s,"warnings":%s},"eslintReport":"eslint-report.json"}' \
-              "$score" "$grade" "$file_count" "$((error_count + warning_count))" "$error_count" "$warning_count" > review-report.json
+            # Create report JSON
+            cat > review-report.json <<EOF
+            {
+              "summary": {
+                "overallScore": $score,
+                "grade": "$grade",
+                "totalFiles": $file_count,
+                "totalIssues": $((error_count + warning_count)),
+                "critical": $error_count,
+                "warnings": $warning_count
+              },
+              "eslintReport": "eslint-report.json"
+            }
+EOF
           else
             # No issues or ESLint failed
-            printf '{"summary":{"overallScore":100,"grade":"A+","totalFiles":0,"totalIssues":0,"critical":0,"warnings":0}}' > review-report.json
+            cat > review-report.json <<EOF
+            {
+              "summary": {
+                "overallScore": 100,
+                "grade": "A+",
+                "totalFiles": 0,
+                "totalIssues": 0,
+                "critical": 0,
+                "warnings": 0
+              }
+            }
+EOF
           fi
 
       - name: Upload review reports
@@ -171,7 +139,6 @@ jobs:
             eslint-report.json
             eslint-output.txt
             review-report.json
-            hallucination-report.json
           if-no-files-found: ignore
 
       - name: Post review comment
@@ -188,8 +155,6 @@ jobs:
             let totalCritical = 0;
             let totalWarnings = 0;
             let grade = 'A+';
-            let hallucinationFlagged = false;
-            let hallucinationSummary = '';
 
             try {
               if (fs.existsSync('review-report.json')) {
@@ -202,31 +167,6 @@ jobs:
                 grade = reviewData.summary.grade;
               }
 
-              // Check for hallucination detection results
-              if (fs.existsSync('hallucination-report.json')) {
-                const hallData = JSON.parse(fs.readFileSync('hallucination-report.json', 'utf8'));
-                hallucinationFlagged = hallData.flagged || false;
-
-                if (hallData.total_steps !== undefined) {
-                  const { total_steps, flagged_steps } = hallData;
-                  hallucinationSummary = `检测了 ${total_steps} 个代码声明，${flagged_steps} 个被标记`;
-
-                  // 添加详细信息
-                  if (hallData.details && hallData.details.length > 0) {
-                    const flaggedItems = hallData.details.filter(d => d.flagged);
-                    if (flaggedItems.length > 0) {
-                      hallucinationSummary += '\n\n**标记的声明:**\n';
-                      flaggedItems.slice(0, 5).forEach(item => {
-                        hallucinationSummary += `- ${item.claim.substring(0, 80)}... (Gap: ${item.budget_gap.min.toFixed(2)} bits)\n`;
-                      });
-                      if (flaggedItems.length > 5) {
-                        hallucinationSummary += `- ...还有 ${flaggedItems.length - 5} 个\n`;
-                      }
-                    }
-                  }
-                }
-              }
-
               report += `# 🔬 代码审查报告\n\n`;
               report += `## 总体评分\n`;
               report += `- **得分**: ${overallScore}/100\n`;
@@ -235,17 +175,6 @@ jobs:
               report += `- **总问题数**: ${totalIssues}\n`;
               report += `- **错误**: ${totalCritical}\n`;
               report += `- **警告**: ${totalWarnings}\n\n`;
-
-              // Hallucination detection section
-              if (hallucinationSummary) {
-                report += `## 🍓 AI 幻觉检测\n`;
-                report += `- **状态**: ${hallucinationFlagged ? '⚠️ 检测到潜在问题' : '✅ 通过'}\n`;
-                report += `- **详情**: ${hallucinationSummary}\n\n`;
-
-                if (hallucinationFlagged) {
-                  report += `> 💡 检测到 AI 分析可能存在幻觉或缺乏证据支持的声明。建议人工审查相关内容。\n\n`;
-                }
-              }
 
               if (totalCritical > 0) {
                 report += `## 🚨 错误\n`;
@@ -276,8 +205,7 @@ jobs:
                 const eslintOutput = fs.readFileSync('eslint-output.txt', 'utf8');
                 if (eslintOutput.trim()) {
                   report += `\n---\n## ESLint 检查结果\n\n`;
-                  const lines = eslintOutput.split('\n').slice(0, 50);
-                  report += `\`\`\`\n${lines.join('\n')}\n\`\`\`\n`;
+                  report += `\`\`\`\n${eslintOutput.split('\n').slice(0, 50).join('\n')}\n\`\`\`\n`;
                 }
               }
 
