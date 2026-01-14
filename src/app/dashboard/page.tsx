@@ -248,7 +248,12 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="border-t p-4">
-                    <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); }}>
+                    <form
+                      className="flex gap-2"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                      }}
+                    >
                       <input
                         type="text"
                         placeholder="输入你的消息..."
